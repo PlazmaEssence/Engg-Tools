@@ -20,15 +20,14 @@ const EGG_TOOLS = [
     tags: ['Length', 'Pressure', 'Flow', 'Mass'],
     url: 'tools/unit-converter/',
     status: 'live'
+  },
+  {
+    id: 'tmin-calculator',
+    name: 'Pipe Wall Thickness (tmin)',
+    icon: '⭕',
+    desc: 'Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4.',
+    tags: ['B31.3', 'B31.4', 'Wall Thickness'],
+    url: 'tools/tmin-calculator/',
+    status: 'live'
   }
-  // Next up, e.g.:
-  // {
-  //   id: 'wall-thickness',
-  //   name: 'Pipe Wall Thickness',
-  //   icon: '⭕',
-  //   desc: 'B31.3 / B31.4 pressure design thickness calculator.',
-  //   tags: ['B31.3', 'B31.4'],
-  //   url: 'tools/wall-thickness/',
-  //   status: 'coming-soon'
-  // },
 ];
