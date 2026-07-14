@@ -59,6 +59,15 @@
 
   .unit-select:focus { outline: none; border-color: var(--gold-dim); }
 
+  .unit-controls { display: flex; align-items: center; gap: 8px; }
+  .unit-controls .unit-select { flex: 1 1 0; min-width: 0; }
+  .unit-sep {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+  }
+
   .swap-col {
     display: flex;
     align-items: center;
@@ -116,7 +125,7 @@
       <div class="panel-header"><label>From</label></div>
       <div class="convert-body">
         <input type="number" class="val-input" id="val-from" value="1">
-        <select class="unit-select" id="unit-from"></select>
+        <div class="unit-controls" id="units-from"></div>
       </div>
     </div>
 
@@ -130,7 +139,7 @@
       <div class="panel-header"><label>To</label></div>
       <div class="convert-body">
         <input type="number" class="val-input" id="val-to" value="0">
-        <select class="unit-select" id="unit-to"></select>
+        <div class="unit-controls" id="units-to"></div>
       </div>
     </div>
   </div>
