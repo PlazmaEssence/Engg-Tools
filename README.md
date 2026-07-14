@@ -50,6 +50,19 @@ Every page loads `tools-registry.js` then `site.js`, and sets two globals first:
 
 That's it — the home page grid and every page's "Tools" nav dropdown pick it up automatically.
 
+## Cache-busting (making pushes show up)
+
+GitHub Pages rebuilds automatically on every push to `main`, but browsers and the CDN cache JS/CSS by URL, so a returning visitor can keep running old assets until they clear their cache. To avoid that, every asset include carries a `?v=<n>` version query:
+
+```html
+<link rel="stylesheet" href="../../assets/css/theme.css?v=1">
+<script src="../../assets/js/tools-registry.js?v=1"></script>
+<script src="../../assets/js/site.js?v=1"></script>
+<script src="converter.js?v=2"></script>
+```
+
+Changing the URL makes every cache layer treat it as a new file and refetch. **When you edit a shared file (`theme.css`, `tools-registry.js`, `site.js`), bump its `?v=` number in every page that includes it.** For a tool's own script, bump the `?v=` on just that page. Adding a new tool means editing `tools-registry.js`, so bump its version too — otherwise the new tool card/nav entry stays hidden behind a cached registry.
+
 ## Local preview
 
 No build step needed. From the repo root:
