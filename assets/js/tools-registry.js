@@ -29,5 +29,14 @@ const EGG_TOOLS = [
     tags: ['B31.3', 'B31.4', 'Wall Thickness'],
     url: 'tools/tmin-calculator/',
     status: 'live'
+  },
+  {
+    id: 'thermal-growth',
+    name: 'Pipe Thermal Growth',
+    icon: '🌡️',
+    desc: 'Unrestrained thermal growth of a pipe run from length, installation and operating temperature, and coefficient of thermal expansion, with unit dropdowns on every input and the output.',
+    tags: ['Thermal', 'Expansion', 'Flexibility'],
+    url: 'tools/thermal-growth/',
+    status: 'live'
   }
 ];
