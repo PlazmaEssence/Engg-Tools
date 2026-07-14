@@ -3,7 +3,39 @@
    Linear categories store each unit's factor to a common base
    unit (value_in_base = value * factor). Temperature is handled
    separately since C/F/K/R need an offset, not just a factor.
+
+   Compound categories (e.g. Flow Rate = volume per time) do not
+   list every combination. Instead they reference two dimensions
+   (a numerator and a denominator) and show one small dropdown for
+   each, so you can build any pairing — US gal/min, m3/h, bbl/day —
+   from two short lists instead of one long one.
    ============================================================ */
+
+/* Reusable dimension unit tables, shared by simple categories and
+   by the numerator/denominator of compound categories. */
+const UC_VOLUME_UNITS = [
+  { key: 'cm3',   label: 'cm³ (mL)',              sym: 'cm³',    factor: 1e-6 },
+  { key: 'L',     label: 'Liter (L)',             sym: 'L',      factor: 0.001 },
+  { key: 'm3',    label: 'm³',                    sym: 'm³',     factor: 1 },
+  { key: 'in3',   label: 'in³',                   sym: 'in³',    factor: 1.6387064e-5 },
+  { key: 'ft3',   label: 'ft³',                   sym: 'ft³',    factor: 0.028316846592 },
+  { key: 'usgal', label: 'US gallon',             sym: 'US gal', factor: 0.003785411784 },
+  { key: 'ukgal', label: 'UK (imperial) gallon',  sym: 'UK gal', factor: 0.00454609 },
+  { key: 'bbl',   label: 'Oil barrel (bbl)',      sym: 'bbl',    factor: 0.158987294928 }
+];
+
+const UC_TIME_UNITS = [
+  { key: 's',   label: 'Second (s)',  sym: 's',   factor: 1 },
+  { key: 'min', label: 'Minute (min)', sym: 'min', factor: 60 },
+  { key: 'h',   label: 'Hour (h)',    sym: 'h',   factor: 3600 },
+  { key: 'day', label: 'Day',         sym: 'day', factor: 86400 }
+];
+
+/* dimension key -> unit table, used to look up a compound side */
+const UC_DIM_UNITS = {
+  volume: UC_VOLUME_UNITS,
+  time: UC_TIME_UNITS
+};
 
 const UC_GROUPS = [
   {
@@ -51,16 +83,9 @@ const UC_GROUPS = [
     label: 'Flow & Velocity',
     categories: [
       {
-        key: 'flow', label: 'Flow Rate', base: 'm³/s',
-        units: [
-          { key: 'm3s', label: 'm³/s', factor: 1 },
-          { key: 'm3h', label: 'm³/h', factor: 1 / 3600 },
-          { key: 'Lps', label: 'L/s', factor: 0.001 },
-          { key: 'Lpm', label: 'L/min', factor: 0.001 / 60 },
-          { key: 'gpm', label: 'US gpm', factor: 6.30901964e-5 },
-          { key: 'cfm', label: 'ft³/min (cfm)', factor: 0.0004719474432 },
-          { key: 'bblday', label: 'bbl/day (oil bbl)', factor: 0.158987294928 / 86400 }
-        ]
+        key: 'flow', label: 'Flow Rate',
+        compound: { num: 'volume', den: 'time' },
+        defaults: { fromNum: 'm3', fromDen: 's', toNum: 'usgal', toDen: 'min' }
       },
       {
         key: 'velocity', label: 'Velocity', base: 'm/s',
@@ -130,16 +155,7 @@ const UC_GROUPS = [
       },
       {
         key: 'volume', label: 'Volume', base: 'm³',
-        units: [
-          { key: 'cm3', label: 'cm³ (mL)', factor: 1e-6 },
-          { key: 'L', label: 'Liter (L)', factor: 0.001 },
-          { key: 'm3', label: 'm³', factor: 1 },
-          { key: 'in3', label: 'in³', factor: 1.6387064e-5 },
-          { key: 'ft3', label: 'ft³', factor: 0.028316846592 },
-          { key: 'usgal', label: 'US gallon', factor: 0.003785411784 },
-          { key: 'ukgal', label: 'UK (imperial) gallon', factor: 0.00454609 },
-          { key: 'bbl', label: 'Oil barrel (bbl)', factor: 0.158987294928 }
-        ]
+        units: UC_VOLUME_UNITS
       },
       {
         key: 'density', label: 'Density', base: 'kg/m³',
@@ -172,14 +188,21 @@ function ucFromBase(kelvin, temp) {
   if (temp === 'R') return kelvin * 9 / 5;
 }
 
-function ucConvert(value, fromKey, toKey, category) {
+/* A "side" is whatever unit selection the from/to panel holds:
+   - temperature/linear categories: a single unit object
+   - compound categories: { num: unitObj, den: unitObj }
+   ucConvert takes those side objects directly. */
+function ucConvert(value, fromSide, toSide, category) {
   if (isNaN(value)) return NaN;
   if (category.special === 'temperature') {
-    return ucFromBase(ucToBase(value, fromKey), toKey);
+    return ucFromBase(ucToBase(value, fromSide.key), toSide.key);
   }
-  const from = category.units.find(u => u.key === fromKey);
-  const to = category.units.find(u => u.key === toKey);
-  return (value * from.factor) / to.factor;
+  if (category.compound) {
+    const fromBase = fromSide.num.factor / fromSide.den.factor;
+    const toBase = toSide.num.factor / toSide.den.factor;
+    return value * fromBase / toBase;
+  }
+  return (value * fromSide.factor) / toSide.factor;
 }
 
 (function initConverter() {
@@ -188,8 +211,8 @@ function ucConvert(value, fromKey, toKey, category) {
   const catGroupsEl = document.getElementById('cat-groups');
   const fromValEl = document.getElementById('val-from');
   const toValEl = document.getElementById('val-to');
-  const fromUnitEl = document.getElementById('unit-from');
-  const toUnitEl = document.getElementById('unit-to');
+  const unitsFromEl = document.getElementById('units-from');
+  const unitsToEl = document.getElementById('units-to');
   const factorNoteEl = document.getElementById('factor-note');
   const swapBtn = document.getElementById('swap-btn');
 
@@ -215,23 +238,83 @@ function ucConvert(value, fromKey, toKey, category) {
     });
   }
 
-  function populateUnitSelects() {
-    const opts = currentCategory.units.map(u => `<option value="${u.key}">${u.label}</option>`).join('');
-    fromUnitEl.innerHTML = opts;
-    toUnitEl.innerHTML = opts;
-    fromUnitEl.value = currentCategory.units[0].key;
-    toUnitEl.value = currentCategory.units[1] ? currentCategory.units[1].key : currentCategory.units[0].key;
+  function optionsHTML(units, compound) {
+    return units.map(u => `<option value="${u.key}">${compound ? (u.sym || u.label) : u.label}</option>`).join('');
   }
 
-  function updateFactorNote() {
+  /* Build the dropdown(s) for one panel. Compound categories get a
+     numerator select, a "/" separator, and a denominator select;
+     everything else gets a single select. */
+  function buildSideControls(container) {
+    if (currentCategory.compound) {
+      const numUnits = UC_DIM_UNITS[currentCategory.compound.num];
+      const denUnits = UC_DIM_UNITS[currentCategory.compound.den];
+      container.innerHTML =
+        `<select class="unit-select" data-role="num">${optionsHTML(numUnits, true)}</select>` +
+        `<span class="unit-sep">/</span>` +
+        `<select class="unit-select" data-role="den">${optionsHTML(denUnits, true)}</select>`;
+    } else {
+      container.innerHTML =
+        `<select class="unit-select" data-role="unit">${optionsHTML(currentCategory.units, false)}</select>`;
+    }
+    container.querySelectorAll('select').forEach(sel => {
+      sel.addEventListener('change', () => recompute('from'));
+    });
+  }
+
+  function setVal(container, role, val) {
+    const sel = container.querySelector(`[data-role="${role}"]`);
+    if (sel) sel.value = val;
+  }
+
+  function populateUnitSelects() {
+    buildSideControls(unitsFromEl);
+    buildSideControls(unitsToEl);
+
+    if (currentCategory.compound) {
+      const d = currentCategory.defaults || {};
+      const numUnits = UC_DIM_UNITS[currentCategory.compound.num];
+      const denUnits = UC_DIM_UNITS[currentCategory.compound.den];
+      setVal(unitsFromEl, 'num', d.fromNum || numUnits[0].key);
+      setVal(unitsFromEl, 'den', d.fromDen || denUnits[0].key);
+      setVal(unitsToEl, 'num', d.toNum || numUnits[Math.min(1, numUnits.length - 1)].key);
+      setVal(unitsToEl, 'den', d.toDen || denUnits[0].key);
+    } else {
+      const units = currentCategory.units;
+      setVal(unitsFromEl, 'unit', units[0].key);
+      setVal(unitsToEl, 'unit', (units[1] || units[0]).key);
+    }
+  }
+
+  /* Read the current unit selection from a panel into a "side" object
+     that ucConvert understands. */
+  function readSide(container) {
+    if (currentCategory.compound) {
+      const numUnits = UC_DIM_UNITS[currentCategory.compound.num];
+      const denUnits = UC_DIM_UNITS[currentCategory.compound.den];
+      return {
+        num: numUnits.find(u => u.key === container.querySelector('[data-role="num"]').value),
+        den: denUnits.find(u => u.key === container.querySelector('[data-role="den"]').value)
+      };
+    }
+    const key = container.querySelector('[data-role="unit"]').value;
+    return currentCategory.units.find(u => u.key === key);
+  }
+
+  function sideLabel(side) {
+    if (currentCategory.compound) {
+      return `${side.num.sym || side.num.label}/${side.den.sym || side.den.label}`;
+    }
+    return side.label;
+  }
+
+  function updateFactorNote(fromSide, toSide) {
     if (currentCategory.special === 'temperature') {
       factorNoteEl.textContent = '';
       return;
     }
-    const from = currentCategory.units.find(u => u.key === fromUnitEl.value);
-    const to = currentCategory.units.find(u => u.key === toUnitEl.value);
-    const rate = from.factor / to.factor;
-    factorNoteEl.textContent = `1 ${from.label} = ${trim(rate)} ${to.label}`;
+    const rate = ucConvert(1, fromSide, toSide, currentCategory);
+    factorNoteEl.textContent = `1 ${sideLabel(fromSide)} = ${trim(rate)} ${sideLabel(toSide)}`;
   }
 
   function trim(n) {
@@ -241,25 +324,34 @@ function ucConvert(value, fromKey, toKey, category) {
   }
 
   function recompute(editedSide) {
-    updateFactorNote();
+    const fromSide = readSide(unitsFromEl);
+    const toSide = readSide(unitsToEl);
+    updateFactorNote(fromSide, toSide);
     if (editedSide === 'from') {
-      const v = ucConvert(parseFloat(fromValEl.value), fromUnitEl.value, toUnitEl.value, currentCategory);
+      const v = ucConvert(parseFloat(fromValEl.value), fromSide, toSide, currentCategory);
       toValEl.value = isNaN(v) ? '' : trim(v);
     } else {
-      const v = ucConvert(parseFloat(toValEl.value), toUnitEl.value, fromUnitEl.value, currentCategory);
+      const v = ucConvert(parseFloat(toValEl.value), toSide, fromSide, currentCategory);
       fromValEl.value = isNaN(v) ? '' : trim(v);
     }
   }
 
   fromValEl.addEventListener('input', () => recompute('from'));
   toValEl.addEventListener('input', () => recompute('to'));
-  fromUnitEl.addEventListener('change', () => recompute('from'));
-  toUnitEl.addEventListener('change', () => recompute('from'));
 
   swapBtn.addEventListener('click', () => {
-    const uf = fromUnitEl.value, ut = toUnitEl.value;
-    fromUnitEl.value = ut;
-    toUnitEl.value = uf;
+    if (currentCategory.compound) {
+      const fn = unitsFromEl.querySelector('[data-role="num"]');
+      const fd = unitsFromEl.querySelector('[data-role="den"]');
+      const tn = unitsToEl.querySelector('[data-role="num"]');
+      const td = unitsToEl.querySelector('[data-role="den"]');
+      [fn.value, tn.value] = [tn.value, fn.value];
+      [fd.value, td.value] = [td.value, fd.value];
+    } else {
+      const f = unitsFromEl.querySelector('[data-role="unit"]');
+      const t = unitsToEl.querySelector('[data-role="unit"]');
+      [f.value, t.value] = [t.value, f.value];
+    }
     recompute('from');
   });
 
