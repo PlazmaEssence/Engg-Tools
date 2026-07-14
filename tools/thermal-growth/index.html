@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pipe Thermal Growth · Egg Tools</title>
+<meta name="description" content="Unrestrained thermal growth of pipe from length, installation and operating temperature, and coefficient of thermal expansion, with unit dropdowns for every input and the output.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/theme.css">
+<style>
+  .input-with-unit { display: flex; gap: 8px; }
+  .input-with-unit input { flex: 1 1 auto; min-width: 0; }
+  .input-with-unit select { flex: 0 0 auto; width: auto; }
+
+  .formula-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 1.5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .formula-box strong { color: var(--text); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header"></header>
+
+<main>
+  <div class="breadcrumb"><a href="../../index.html">Egg Tools</a> <span>/</span> <span>Pipe Thermal Growth</span></div>
+
+  <div class="intro">
+    <h1>Pipe Thermal Growth</h1>
+    <p>Free (unrestrained) axial thermal growth of a pipe run: how much a length grows or shrinks when it moves from installation temperature to operating temperature. Every input and the result have their own unit dropdown, so you can mix and match.</p>
+  </div>
+
+  <div class="notice notice-info">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>Unrestrained growth only (<strong>ΔL = α · L · ΔT</strong>). It does not compute restrained thermal load, stress, or flexibility. The material quick-fills are approximate mean coefficients near room temperature; α is temperature-dependent, so for real design use the mean coefficient between installation and design temperature from the applicable code table (e.g. ASME B31.1/B31.3 Appendix).</div>
+  </div>
+
+  <div class="input-panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><label>Inputs</label></div>
+    <div class="field-grid">
+      <div class="field">
+        <label>Unrestrained length, L</label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-L" value="100">
+          <select id="u-L"></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Temperature unit (T₁ &amp; T₂)</label>
+        <select id="u-T"></select>
+      </div>
+
+      <div class="field">
+        <label>Installation temperature, T₁</label>
+        <input type="number" step="any" id="f-Tinstall" value="70">
+      </div>
+
+      <div class="field">
+        <label>High / operating temperature, T₂</label>
+        <input type="number" step="any" id="f-Thigh" value="300">
+      </div>
+
+      <div class="field">
+        <label>Material quick-fill (α)</label>
+        <select id="f-material"></select>
+      </div>
+
+      <div class="field">
+        <label>Coefficient of thermal expansion, α</label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-alpha" value="11.7">
+          <select id="u-alpha"></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Output unit (ΔL)</label>
+        <select id="u-out"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat stat-gold">
+      <div class="stat-top"><div class="stat-icon">ΔL</div></div>
+      <div class="stat-num" id="out-dL">–</div>
+      <div class="stat-lbl">thermal growth, ΔL</div>
+    </div>
+    <div class="stat stat-s">
+      <div class="stat-top"><div class="stat-icon">ΔT</div></div>
+      <div class="stat-num" id="out-dT">–</div>
+      <div class="stat-lbl">temperature change, T₂ − T₁</div>
+    </div>
+    <div class="stat stat-a">
+      <div class="stat-top"><div class="stat-icon">ε</div></div>
+      <div class="stat-num" id="out-strain">–</div>
+      <div class="stat-lbl">unit growth (µm/m)</div>
+    </div>
+  </div>
+
+  <div class="formula-box" id="formula-box"></div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="../../assets/js/tools-registry.js"></script>
+<script>
+  window.EGG_BASE = '../../';
+  window.EGG_CURRENT_TOOL = 'thermal-growth';
+</script>
+<script src="../../assets/js/site.js"></script>
+<script src="thermal.js?v=1"></script>
+</body>
+</html>
