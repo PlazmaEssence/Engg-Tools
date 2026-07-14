@@ -58,19 +58,8 @@ const TG_ALPHA = {
 };
 const TG_ALPHA_ORDER = ['um_m_C', 'mm_m_C', 'per_C', 'per_K', 'uin_in_F', 'per_F', 'per_R'];
 
-/* material quick-fills, mean coefficient near room temperature,
-   in µm/(m·°C). Approximate — verify against the code table. */
-const TG_MATERIALS = [
-  { label: 'Custom / manual entry', a: null },
-  { label: 'Carbon steel', a: 11.7 },
-  { label: 'Low-alloy / Cr-Mo steel', a: 12.5 },
-  { label: 'Austenitic stainless (304 / 316)', a: 16.0 },
-  { label: 'Duplex stainless (2205)', a: 13.0 },
-  { label: 'Nickel alloy (Alloy 625)', a: 12.8 },
-  { label: 'Copper', a: 16.6 },
-  { label: 'Aluminum', a: 23.0 },
-  { label: 'Cast iron (gray)', a: 10.5 }
-];
+/* material quick-fills (TG_MATERIALS) live in materials.js, loaded
+   before this script — edit that data file to add materials. */
 
 function tgAlphaPerC(value, key) {
   const u = TG_ALPHA[key];
