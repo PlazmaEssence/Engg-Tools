@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit Converter · Egg Tools</title>
+<meta name="description" content="Convert between metric and imperial units for piping engineering — length, pressure, temperature, flow, velocity, mass, force, torque, area, volume, density.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/theme.css">
+<style>
+  .cat-group { margin-bottom: 1.5rem; }
+  .cat-group-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 8px;
+  }
+  .cat-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .convert-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+  }
+
+  .convert-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .val-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .unit-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+
+  .unit-select:focus { outline: none; border-color: var(--gold-dim); }
+
+  .swap-col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .swap-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .swap-btn:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-bg); transform: rotate(180deg); }
+
+  .factor-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+  }
+
+  @media (max-width: 680px) {
+    .convert-grid { grid-template-columns: 1fr; }
+    .swap-col { transform: rotate(90deg); padding: 4px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header"></header>
+
+<main>
+  <div class="breadcrumb"><a href="../../index.html">Egg Tools</a> <span>/</span> <span>Unit Converter</span></div>
+
+  <div class="intro">
+    <h1>Unit Converter</h1>
+    <p>Pick a category, enter a value on either side, and it converts live. Built around the units used day-to-day on B31.3 / B31.4 piping work.</p>
+  </div>
+
+  <div id="cat-groups"></div>
+
+  <div class="convert-grid">
+    <div class="input-panel">
+      <div class="panel-header"><label>From</label></div>
+      <div class="convert-body">
+        <input type="number" class="val-input" id="val-from" value="1">
+        <select class="unit-select" id="unit-from"></select>
+      </div>
+    </div>
+
+    <div class="swap-col">
+      <button class="swap-btn" id="swap-btn" title="Swap units">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </button>
+    </div>
+
+    <div class="input-panel">
+      <div class="panel-header"><label>To</label></div>
+      <div class="convert-body">
+        <input type="number" class="val-input" id="val-to" value="0">
+        <select class="unit-select" id="unit-to"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="factor-note" id="factor-note"></div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="../../assets/js/tools-registry.js"></script>
+<script>
+  window.EGG_BASE = '../../';
+  window.EGG_CURRENT_TOOL = 'unit-converter';
+</script>
+<script src="../../assets/js/site.js"></script>
+<script src="converter.js"></script>
+</body>
+</html>
