@@ -7,14 +7,23 @@
    The two "hard" pieces are hand-rolled and small:
      - a minimal EXIF reader (pulls GPS lat/lon + orientation)
      - a minimal ZIP writer (store method; KMZ is just a zip)
+
+   Two batch conveniences:
+     - Grouping: photos within a configurable distance collapse
+       into a single pin whose popup shows all of them.
+     - Compact view: large imports render as tight rows instead
+       of full editor cards, with a "needs coordinates" filter.
    ============================================================ */
 
 (function () {
   'use strict';
 
   // ---- state -------------------------------------------------
-  let photos = [];          // { id, file, name, lat, lon, caption, fromExif, thumbUrl }
+  let photos = [];            // { id, file, name, lat, lon, caption, fromExif, thumbUrl }
   let seq = 0;
+  let filterMissing = false;  // show only photos without coordinates
+  let compactUserSet = null;  // null = auto by count; true/false = user override
+  const BULK_THRESHOLD = 15;  // above this, default to the compact view
 
   const $ = (id) => document.getElementById(id);
 
@@ -126,6 +135,44 @@
     }
   }
 
+  // ---- clustering -------------------------------------------
+  // Great-circle distance in metres between two lat/lon points.
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+  }
+
+  // Greedy single-pass clustering: each point joins the nearest
+  // existing cluster whose centroid is within `metres`, else it
+  // seeds a new cluster. Centroids update as members are added.
+  // items: [{ lat, lon, ... }] (numbers). Returns
+  // [{ lat, lon, members: [item, ...] }].
+  function clusterPhotos(items, metres) {
+    const clusters = [];
+    for (const it of items) {
+      let best = null;
+      let bestD = Infinity;
+      for (const c of clusters) {
+        const d = haversine(it.lat, it.lon, c.lat, c.lon);
+        if (d <= metres && d < bestD) { best = c; bestD = d; }
+      }
+      if (best) {
+        best.members.push(it);
+        const n = best.members.length;
+        best.lat = best.members.reduce((s, m) => s + m.lat, 0) / n;
+        best.lon = best.members.reduce((s, m) => s + m.lon, 0) / n;
+      } else {
+        clusters.push({ lat: it.lat, lon: it.lon, members: [it] });
+      }
+    }
+    return clusters;
+  }
+
   // ---- KML ---------------------------------------------------
   function xmlEscape(s) {
     return String(s == null ? '' : s)
@@ -133,16 +180,23 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
   }
 
-  function buildKml(items, docName) {
-    const marks = items.map((it) => {
-      const desc =
-        '<img src="' + it.path + '" style="max-width:480px;width:100%;height:auto;" />' +
-        (it.caption ? '<br/><p>' + xmlEscape(it.caption) + '</p>' : '');
+  // placemarks: [{ name, lat, lon, group:bool,
+  //                entries: [{ path, name, caption }] }]
+  function buildKml(placemarks, docName) {
+    const marks = placemarks.map((pm) => {
+      const body = pm.entries.map((e) => {
+        const img = '<img src="' + e.path + '" style="max-width:480px;width:100%;height:auto;" />';
+        if (pm.group) {
+          return img + '<p style="margin:4px 0 14px;"><b>' + xmlEscape(e.name) + '</b>' +
+            (e.caption ? ': ' + xmlEscape(e.caption) : '') + '</p>';
+        }
+        return img + (e.caption ? '<br/><p>' + xmlEscape(e.caption) + '</p>' : '');
+      }).join('');
       return (
         '  <Placemark>\n' +
-        '    <name>' + xmlEscape(it.name) + '</name>\n' +
-        '    <description><![CDATA[' + desc + ']]></description>\n' +
-        '    <Point><coordinates>' + it.lon + ',' + it.lat + ',0</coordinates></Point>\n' +
+        '    <name>' + xmlEscape(pm.name) + '</name>\n' +
+        '    <description><![CDATA[' + body + ']]></description>\n' +
+        '    <Point><coordinates>' + pm.lon + ',' + pm.lat + ',0</coordinates></Point>\n' +
         '  </Placemark>'
       );
     }).join('\n');
@@ -266,6 +320,28 @@
     return fileName.replace(/\.[^.]+$/, '') || fileName;
   }
 
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function hasCoords(p) {
+    const la = parseFloat(p.lat), lo = parseFloat(p.lon);
+    return isFinite(la) && la >= -90 && la <= 90 && isFinite(lo) && lo >= -180 && lo <= 180;
+  }
+
+  // Current grouping settings read from the UI.
+  function grouping() {
+    const t = $('group-toggle');
+    return {
+      on: t ? t.checked : false,
+      dist: Math.max(1, parseFloat($('group-dist').value) || 50),
+    };
+  }
+
+  function isCompact() {
+    return compactUserSet !== null ? compactUserSet : photos.length > BULK_THRESHOLD;
+  }
+
   // ---- ingest -----------------------------------------------
   async function addFiles(fileList) {
     const files = Array.from(fileList).filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png)$/i.test(f.name));
@@ -296,33 +372,20 @@
   }
 
   // ---- rendering --------------------------------------------
-  function render() {
-    const list = $('photo-list');
-    const empty = $('empty-state');
-    list.innerHTML = '';
+  function badgeHtml(p) {
+    if (p.fromExif) return '<span class="loc-badge ok">GPS from photo</span>';
+    if (hasCoords(p)) return '<span class="loc-badge set">coords set</span>';
+    return '<span class="loc-badge warn">needs coordinates</span>';
+  }
 
-    if (!photos.length) {
-      empty.style.display = '';
-      updateBuildState();
-      return;
-    }
-    empty.style.display = 'none';
-
-    photos.forEach((p, idx) => {
-      const card = document.createElement('div');
-      card.className = 'photo-card input-panel';
-
-      const badge = p.fromExif
-        ? '<span class="loc-badge ok">GPS from photo</span>'
-        : (hasCoords(p) ? '<span class="loc-badge set">coords set</span>'
-                        : '<span class="loc-badge warn">needs coordinates</span>');
-
-      card.innerHTML =
-        '<div class="pc-thumb"><img src="' + p.thumbUrl + '" alt=""><span class="pc-num">' + (idx + 1) + '</span></div>' +
+  function cardHtml(p, num) {
+    return (
+      '<div class="photo-card photo-item input-panel">' +
+        '<div class="pc-thumb"><img src="' + p.thumbUrl + '" alt=""><span class="pc-num">' + num + '</span></div>' +
         '<div class="pc-fields">' +
           '<div class="pc-row1">' +
             '<input class="pc-name" type="text" value="' + escAttr(p.name) + '" placeholder="Name" data-k="name" data-id="' + p.id + '">' +
-            badge +
+            badgeHtml(p) +
             '<button class="pc-remove" title="Remove" data-remove="' + p.id + '">✕</button>' +
           '</div>' +
           '<div class="pc-coords">' +
@@ -331,21 +394,69 @@
             '<div class="field paste-field"><label>Paste "lat, lon"</label><input type="text" placeholder="paste from Google Maps" data-paste="' + p.id + '"></div>' +
           '</div>' +
           '<div class="field"><label>Caption (optional)</label><input type="text" value="' + escAttr(p.caption) + '" placeholder="Shown under the photo" data-k="caption" data-id="' + p.id + '"></div>' +
-        '</div>';
+        '</div>' +
+      '</div>'
+    );
+  }
 
-      list.appendChild(card);
+  function rowHtml(p, num) {
+    return (
+      '<div class="photo-row photo-item input-panel">' +
+        '<div class="pr-thumb"><img src="' + p.thumbUrl + '" alt=""><span class="pr-num">' + num + '</span></div>' +
+        '<input class="pr-name" type="text" value="' + escAttr(p.name) + '" placeholder="Name" data-k="name" data-id="' + p.id + '">' +
+        '<input class="pr-coord" type="text" inputmode="decimal" value="' + escAttr(p.lat) + '" placeholder="lat" data-k="lat" data-id="' + p.id + '">' +
+        '<input class="pr-coord" type="text" inputmode="decimal" value="' + escAttr(p.lon) + '" placeholder="lon" data-k="lon" data-id="' + p.id + '">' +
+        badgeHtml(p) +
+        '<button class="pc-remove" title="Remove" data-remove="' + p.id + '">✕</button>' +
+      '</div>'
+    );
+  }
+
+  function render() {
+    const list = $('photo-list');
+    const empty = $('empty-state');
+    const toolbar = $('list-toolbar');
+    list.innerHTML = '';
+
+    if (!photos.length) {
+      empty.style.display = '';
+      empty.textContent = 'No photos yet.';
+      toolbar.style.display = 'none';
+      updateBuildState();
+      return;
+    }
+
+    toolbar.style.display = '';
+    const compact = isCompact();
+    list.className = compact ? 'compact' : '';
+
+    // Sync toolbar controls to current state.
+    $('compact-toggle').checked = compact;
+    $('filter-missing').checked = filterMissing;
+
+    const withCoords = photos.filter(hasCoords).length;
+    const missing = photos.length - withCoords;
+    $('list-summary').innerHTML =
+      '<strong>' + photos.length + '</strong> ' + (photos.length === 1 ? 'photo' : 'photos') +
+      ' · ' + withCoords + ' located' +
+      (missing ? ' · <span class="warn-text">' + missing + ' need coordinates</span>' : '');
+    $('filter-missing').disabled = !missing;
+
+    let shown = 0;
+    photos.forEach((p, idx) => {
+      if (filterMissing && hasCoords(p)) return;
+      list.insertAdjacentHTML('beforeend', compact ? rowHtml(p, idx + 1) : cardHtml(p, idx + 1));
+      shown++;
     });
 
+    if (shown === 0) {
+      empty.style.display = '';
+      empty.textContent = filterMissing ? 'Every photo has coordinates. 🎉' : 'No photos yet.';
+    } else {
+      empty.style.display = 'none';
+    }
+
     updateBuildState();
-  }
-
-  function escAttr(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  }
-
-  function hasCoords(p) {
-    const la = parseFloat(p.lat), lo = parseFloat(p.lon);
-    return isFinite(la) && la >= -90 && la <= 90 && isFinite(lo) && lo >= -180 && lo <= 180;
   }
 
   function updateBuildState() {
@@ -360,17 +471,29 @@
     }
     const missing = photos.filter((p) => !hasCoords(p)).length;
     $('count-label').textContent = photos.length + (photos.length === 1 ? ' photo' : ' photos');
+
     if (missing) {
       notice.className = 'notice notice-danger';
       notice.innerHTML = '<strong>' + missing + '</strong> of ' + photos.length +
         ' ' + (photos.length === 1 ? 'photo' : 'photos') + ' still need coordinates. Fill them in (or read them from a geotagged photo) before building.';
       btn.disabled = true;
-    } else {
-      notice.className = 'notice notice-info';
-      notice.innerHTML = 'Ready — <strong>' + photos.length + '</strong> ' +
-        (photos.length === 1 ? 'photo' : 'photos') + ' with coordinates.';
-      btn.disabled = false;
+      return;
     }
+
+    const g = grouping();
+    let msg = 'Ready — <strong>' + photos.length + '</strong> ' +
+      (photos.length === 1 ? 'photo' : 'photos');
+    if (g.on) {
+      const located = photos.filter(hasCoords).map((p) => ({ lat: +p.lat, lon: +p.lon }));
+      const pins = clusterPhotos(located, g.dist).length;
+      msg += ' → <strong>' + pins + '</strong> ' + (pins === 1 ? 'pin' : 'pins') +
+        ' (grouped within ' + g.dist + ' m)';
+    } else {
+      msg += ', one pin each';
+    }
+    notice.className = 'notice notice-info';
+    notice.innerHTML = msg + '.';
+    btn.disabled = false;
   }
 
   // ---- build ------------------------------------------------
@@ -385,6 +508,7 @@
       const docName = $('doc-name').value.trim() || 'Photos';
       const downscale = $('downscale').checked;
       const maxEdge = Math.max(200, parseInt($('max-edge').value, 10) || 1600);
+      const g = grouping();
 
       const entries = [];
       const items = [];
@@ -406,7 +530,27 @@
         });
       }
 
-      const kml = buildKml(items, docName);
+      // One placemark per photo, or one per cluster when grouping.
+      let placemarks;
+      if (g.on) {
+        placemarks = clusterPhotos(items, g.dist).map((c) => {
+          const many = c.members.length > 1;
+          const first = c.members[0];
+          return {
+            name: many ? first.name + ' (+' + (c.members.length - 1) + ' more)' : first.name,
+            lat: c.lat, lon: c.lon,
+            group: many,
+            entries: c.members.map((m) => ({ path: m.path, name: m.name, caption: m.caption })),
+          };
+        });
+      } else {
+        placemarks = items.map((it) => ({
+          name: it.name, lat: it.lat, lon: it.lon, group: false,
+          entries: [{ path: it.path, name: it.name, caption: it.caption }],
+        }));
+      }
+
+      const kml = buildKml(placemarks, docName);
       // doc.kml must be the first entry in a KMZ.
       entries.unshift({ name: 'doc.kml', bytes: new TextEncoder().encode(kml) });
 
@@ -441,8 +585,9 @@
       if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
     });
 
-    // Delegated input handling for the per-photo fields.
-    $('photo-list').addEventListener('input', (e) => {
+    // Delegated input handling for the per-photo fields (both layouts).
+    const list = $('photo-list');
+    list.addEventListener('input', (e) => {
       const t = e.target;
       if (t.dataset.id && t.dataset.k) {
         const p = photos.find((x) => x.id === +t.dataset.id);
@@ -465,7 +610,14 @@
       }
     });
 
-    $('photo-list').addEventListener('click', (e) => {
+    // On blur, if the "needs coordinates" filter is on, re-render so
+    // freshly-located photos drop out of the list.
+    list.addEventListener('change', (e) => {
+      const t = e.target;
+      if (filterMissing && t.dataset.id && (t.dataset.k === 'lat' || t.dataset.k === 'lon')) render();
+    });
+
+    list.addEventListener('click', (e) => {
       const rm = e.target.getAttribute && e.target.getAttribute('data-remove');
       if (rm) {
         const id = +rm;
@@ -481,25 +633,48 @@
       $('max-edge').disabled = !$('downscale').checked;
     });
 
+    // Grouping controls.
+    $('group-toggle').addEventListener('change', () => {
+      $('group-dist-wrap').style.opacity = $('group-toggle').checked ? '1' : '0.4';
+      $('group-dist').disabled = !$('group-toggle').checked;
+      updateBuildState();
+    });
+    $('group-dist').addEventListener('input', updateBuildState);
+
+    // View / filter controls.
+    $('compact-toggle').addEventListener('change', () => {
+      compactUserSet = $('compact-toggle').checked;
+      render();
+    });
+    $('filter-missing').addEventListener('change', () => {
+      filterMissing = $('filter-missing').checked;
+      render();
+    });
+
     $('build-btn').addEventListener('click', build);
     $('clear-btn').addEventListener('click', () => {
       photos.forEach((p) => p.thumbUrl && URL.revokeObjectURL(p.thumbUrl));
       photos = [];
+      filterMissing = false;
+      compactUserSet = null;
       render();
     });
 
     render();
   }
 
-  // Update just the badge on one card without a full re-render
+  // Update just the badge on one item without a full re-render
   // (keeps input focus while typing coordinates).
   function refreshBadge(p) {
-    const card = Array.from(document.querySelectorAll('.photo-card')).find((c) =>
+    const item = Array.from(document.querySelectorAll('.photo-item')).find((c) =>
       c.querySelector('[data-id="' + p.id + '"]'));
-    if (!card) return;
-    const badge = card.querySelector('.loc-badge');
+    if (!item) return;
+    const badge = item.querySelector('.loc-badge');
     if (!badge) return;
-    if (hasCoords(p)) {
+    if (p.fromExif) {
+      badge.className = 'loc-badge ok';
+      badge.textContent = 'GPS from photo';
+    } else if (hasCoords(p)) {
       badge.className = 'loc-badge set';
       badge.textContent = 'coords set';
     } else {
@@ -515,5 +690,5 @@
   }
 
   // Expose pure functions for testing in Node/console.
-  window.PhotoKMZ = { readExif, buildKml, crc32, buildZip };
+  window.PhotoKMZ = { readExif, buildKml, crc32, buildZip, haversine, clusterPhotos };
 })();
