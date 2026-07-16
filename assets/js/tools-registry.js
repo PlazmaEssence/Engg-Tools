@@ -38,5 +38,14 @@ const EGG_TOOLS = [
     tags: ['Thermal', 'Expansion', 'Flexibility'],
     url: 'tools/thermal-growth/',
     status: 'live'
+  },
+  {
+    id: 'photo-kmz',
+    name: 'Photo → KMZ',
+    icon: '📍',
+    desc: 'Turn geotagged photos into a KMZ for Google Earth — one pin per photo, click to see the image. Reads GPS from each photo, or set coordinates by hand. Runs entirely in your browser.',
+    tags: ['KMZ', 'Google Earth', 'GPS', 'Photos'],
+    url: 'tools/photo-kmz/',
+    status: 'live'
   }
 ];

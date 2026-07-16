@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo → KMZ · Egg Tools</title>
+<meta name="description" content="Turn geotagged photos into a KMZ for Google Earth — one pin per photo, click to see the image. Reads GPS from each photo, or set coordinates by hand. Runs entirely in your browser.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/theme.css?v=1">
+<style>
+  /* drop zone */
+  .dropzone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 1.25rem;
+  }
+  .dropzone:hover, .dropzone:focus-visible { border-color: var(--gold-dim); background: var(--gold-bg); outline: none; }
+  .dropzone.drag { border-color: var(--gold); background: var(--gold-bg); }
+  .dropzone .dz-icon { font-size: 34px; line-height: 1; }
+  .dropzone .dz-title { font-size: 15px; font-weight: 600; color: var(--text); margin-top: 10px; }
+  .dropzone .dz-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* options row */
+  .options {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+    padding: 16px; margin-bottom: 1.25rem;
+  }
+  .options .field { min-width: 180px; }
+  .opt-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); user-select: none; }
+  .opt-check input { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; }
+  #max-edge-wrap { transition: opacity 0.15s; }
+  #max-edge-wrap .field { min-width: 120px; }
+  #max-edge { width: 90px; }
+
+  /* photo cards */
+  .photo-card { display: flex; gap: 16px; padding: 14px; margin-bottom: 12px; }
+  .pc-thumb { position: relative; flex: 0 0 auto; }
+  .pc-thumb img {
+    width: 92px; height: 92px; object-fit: cover;
+    border-radius: var(--radius-md); border: 1px solid var(--border);
+    background: var(--surface2); display: block;
+  }
+  .pc-num {
+    position: absolute; top: -8px; left: -8px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--gold); color: #1a1508;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pc-fields { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .pc-row1 { display: flex; align-items: center; gap: 10px; }
+  .pc-name {
+    flex: 1 1 auto; min-width: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; padding: 7px 10px;
+  }
+  .pc-name:focus { outline: none; border-color: var(--gold-dim); }
+  .pc-remove {
+    flex: 0 0 auto; width: 30px; height: 30px; border-radius: var(--radius-sm);
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    cursor: pointer; font-size: 13px; line-height: 1;
+  }
+  .pc-remove:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+
+  .pc-coords { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; }
+  .photo-card .field label { font-size: 11px; }
+  .photo-card .field input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 7px 9px; width: 100%;
+  }
+  .photo-card .paste-field input { font-family: 'Inter', sans-serif; }
+  .photo-card .field input:focus { outline: none; border-color: var(--gold-dim); }
+
+  .loc-badge {
+    flex: 0 0 auto; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 4px 9px; border-radius: 100px; border: 1px solid transparent; white-space: nowrap;
+  }
+  .loc-badge.ok   { background: rgba(70,180,110,0.12); color: #6bd39a; border-color: rgba(70,180,110,0.3); }
+  .loc-badge.set  { background: var(--gold-bg); color: var(--gold); border-color: var(--gold-border); }
+  .loc-badge.warn { background: rgba(220,90,90,0.12); color: #e88; border-color: rgba(220,90,90,0.3); }
+
+  /* build bar */
+  .build-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 1rem; }
+  #count-label { font-size: 13px; color: var(--muted); margin-right: auto; }
+  .notice { margin-bottom: 1rem; }
+
+  #empty-state { text-align: center; color: var(--faint); font-size: 13px; padding: 8px 0 4px; }
+
+  @media (max-width: 620px) {
+    .photo-card { flex-direction: column; }
+    .pc-coords { grid-template-columns: 1fr 1fr; }
+    .pc-coords .paste-field { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header"></header>
+
+<main>
+  <div class="breadcrumb"><a href="../../index.html">Egg Tools</a> <span>/</span> <span>Photo → KMZ</span></div>
+
+  <div class="intro">
+    <h1>Photo → KMZ</h1>
+    <p>Drop in a batch of photos and download a KMZ you can open in Google Earth — each photo becomes a pin on the map, and clicking a pin shows the picture. GPS coordinates are read straight from each photo when present; otherwise, type them in. Everything runs in your browser — nothing is uploaded.</p>
+  </div>
+
+  <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Add photos">
+    <div class="dz-icon">📷</div>
+    <div class="dz-title">Drop photos here, or click to choose</div>
+    <div class="dz-sub">JPEG or PNG · geotagged JPEGs place themselves automatically</div>
+  </div>
+  <input type="file" id="file-input" accept="image/jpeg,image/png" multiple hidden>
+
+  <div class="options input-panel">
+    <div class="field">
+      <label for="doc-name">KMZ / folder name</label>
+      <input type="text" id="doc-name" value="Site Photos" placeholder="Photos">
+    </div>
+    <label class="opt-check">
+      <input type="checkbox" id="downscale" checked>
+      Downscale photos
+    </label>
+    <div id="max-edge-wrap">
+      <div class="field">
+        <label for="max-edge">Max edge (px)</label>
+        <input type="number" id="max-edge" value="1600" min="200" step="100">
+      </div>
+    </div>
+  </div>
+
+  <div class="notice notice-info" id="build-notice">Add some photos to get started.</div>
+
+  <div id="photo-list"></div>
+  <div id="empty-state">No photos yet.</div>
+
+  <div class="build-bar">
+    <span id="count-label"></span>
+    <button class="btn btn-ghost" id="clear-btn">Clear all</button>
+    <button class="btn btn-gold" id="build-btn" disabled>Build KMZ</button>
+  </div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="../../assets/js/tools-registry.js?v=2"></script>
+<script>
+  window.EGG_BASE = '../../';
+  window.EGG_CURRENT_TOOL = 'photo-kmz';
+</script>
+<script src="../../assets/js/site.js?v=1"></script>
+<script src="photo-kmz.js?v=1"></script>
+</body>
+</html>
