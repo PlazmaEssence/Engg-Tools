@@ -42,6 +42,25 @@
   #max-edge-wrap, #group-dist-wrap { transition: opacity 0.15s; }
   #max-edge-wrap .field, #group-dist-wrap .field { min-width: 120px; }
   #max-edge, #group-dist { width: 90px; }
+  .opt-path { flex: 1 1 260px; }
+  .opt-path input { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .opt-opt { color: var(--faint); font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  /* progress bar (import / build) */
+  .progress-wrap { margin-bottom: 1rem; }
+  .progress-track {
+    height: 8px; border-radius: 100px; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .progress-fill {
+    height: 100%; width: 0%; border-radius: 100px;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    transition: width 0.15s ease;
+  }
+  .progress-label {
+    margin-top: 6px; font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted);
+  }
 
   /* list toolbar (summary + view/filter controls) */
   #list-toolbar {
@@ -195,9 +214,19 @@
         <input type="number" id="group-dist" value="50" min="1" step="5">
       </div>
     </div>
+    <span class="opt-sep" aria-hidden="true"></span>
+    <div class="field opt-path">
+      <label for="orig-path">Original photos path <span class="opt-opt">(optional link)</span></label>
+      <input type="text" id="orig-path" placeholder="e.g. D:\Site Visit\Photos  or  https://host/photos">
+    </div>
   </div>
 
   <div class="notice notice-info" id="build-notice">Add some photos to get started.</div>
+
+  <div id="progress" class="progress-wrap" style="display:none">
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="progress-label" id="progress-label"></div>
+  </div>
 
   <div id="list-toolbar" style="display:none">
     <span id="list-summary"></span>
@@ -225,6 +254,6 @@
   window.EGG_CURRENT_TOOL = 'photo-kmz';
 </script>
 <script src="../../assets/js/site.js?v=1"></script>
-<script src="photo-kmz.js?v=2"></script>
+<script src="photo-kmz.js?v=3"></script>
 </body>
 </html>
