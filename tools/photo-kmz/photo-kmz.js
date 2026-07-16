@@ -180,18 +180,29 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
   }
 
+  // Build one photo's popup HTML: embedded (possibly downscaled)
+  // image, its caption, and — when an original-photos path was
+  // given — a link that opens the full original by path + filename.
+  function entryHtml(e, group) {
+    let h = '<img src="' + e.path + '" style="max-width:480px;width:100%;height:auto;" />';
+    if (group) {
+      h += '<p style="margin:4px 0 4px;"><b>' + xmlEscape(e.name) + '</b>' +
+        (e.caption ? ': ' + xmlEscape(e.caption) : '') + '</p>';
+    } else if (e.caption) {
+      h += '<br/><p>' + xmlEscape(e.caption) + '</p>';
+    }
+    if (e.href) {
+      h += '<div style="margin:2px 0 ' + (group ? '12' : '4') + 'px;">' +
+        '<a href="' + e.href + '">Open full image ↗</a></div>';
+    }
+    return h;
+  }
+
   // placemarks: [{ name, lat, lon, group:bool,
-  //                entries: [{ path, name, caption }] }]
+  //                entries: [{ path, name, caption, href }] }]
   function buildKml(placemarks, docName) {
     const marks = placemarks.map((pm) => {
-      const body = pm.entries.map((e) => {
-        const img = '<img src="' + e.path + '" style="max-width:480px;width:100%;height:auto;" />';
-        if (pm.group) {
-          return img + '<p style="margin:4px 0 14px;"><b>' + xmlEscape(e.name) + '</b>' +
-            (e.caption ? ': ' + xmlEscape(e.caption) : '') + '</p>';
-        }
-        return img + (e.caption ? '<br/><p>' + xmlEscape(e.caption) + '</p>' : '');
-      }).join('');
+      const body = pm.entries.map((e) => entryHtml(e, pm.group)).join('');
       return (
         '  <Placemark>\n' +
         '    <name>' + xmlEscape(pm.name) + '</name>\n' +
@@ -320,6 +331,50 @@
     return fileName.replace(/\.[^.]+$/, '') || fileName;
   }
 
+  // Join a user-supplied base path/URL with a filename into a
+  // clickable href. Bare local paths become file:// URLs; existing
+  // URLs (http/https/file/ftp) and UNC shares are respected.
+  function joinUrl(base, filename) {
+    let b = String(base || '').trim();
+    if (!b) return '';
+    b = b.replace(/\\/g, '/').replace(/\/+$/, '');       // backslashes → /, drop trailing /
+    const hasScheme = /^[a-z][a-z0-9+.\-]*:\/\//i.test(b);
+    if (!hasScheme) {
+      if (/^[a-zA-Z]:/.test(b)) b = 'file:///' + b;      // C:/Users/... drive letter
+      else if (b.startsWith('//')) b = 'file:' + b;      // //server/share (UNC)
+      else b = 'file:///' + b.replace(/^\/+/, '');       // /home/... or relative
+    }
+    // encodeURI keeps the scheme, colons and slashes but escapes
+    // spaces; # and ? are escaped too so filenames can't break the URL.
+    return encodeURI(b + '/' + filename).replace(/#/g, '%23').replace(/\?/g, '%3F');
+  }
+
+  // ---- progress UI ------------------------------------------
+  function showProgress(on) {
+    const el = $('progress');
+    if (el) el.style.display = on ? '' : 'none';
+  }
+
+  function setProgress(done, total, startMs, verb) {
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const fill = $('progress-fill');
+    if (fill) fill.style.width = pct + '%';
+    const elapsed = (performance.now() - startMs) / 1000;
+    const rate = elapsed > 0 ? done / elapsed : 0;
+    const remaining = rate > 0 ? Math.max(0, (total - done) / rate) : 0;
+    const label = $('progress-label');
+    if (label) {
+      label.textContent = verb + ' ' + done + ' / ' + total +
+        ' · ' + rate.toFixed(1) + ' img/s' +
+        (done < total ? ' · ~' + Math.ceil(remaining) + 's left' : ' · done');
+    }
+  }
+
+  // Yield to the browser so the progress bar actually repaints
+  // between images.
+  const nextFrame = () => new Promise((r) =>
+    (window.requestAnimationFrame || setTimeout)(r));
+
   function escAttr(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   }
@@ -345,6 +400,13 @@
   // ---- ingest -----------------------------------------------
   async function addFiles(fileList) {
     const files = Array.from(fileList).filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png)$/i.test(f.name));
+    if (!files.length) return;
+
+    const track = files.length > 1;   // only bother with a bar for batches
+    const start = performance.now();
+    if (track) { showProgress(true); setProgress(0, files.length, start, 'Reading'); }
+
+    let done = 0;
     for (const file of files) {
       const id = ++seq;
       const photo = {
@@ -367,7 +429,10 @@
           }
         } catch (e) { /* ignore — user can enter coords */ }
       }
+      done++;
+      if (track) { setProgress(done, files.length, start, 'Reading'); await nextFrame(); }
     }
+    if (track) showProgress(false);
     render();
   }
 
@@ -508,11 +573,15 @@
       const docName = $('doc-name').value.trim() || 'Photos';
       const downscale = $('downscale').checked;
       const maxEdge = Math.max(200, parseInt($('max-edge').value, 10) || 1600);
+      const origPath = $('orig-path').value.trim();
       const g = grouping();
 
       const entries = [];
       const items = [];
       let n = 0;
+      const start = performance.now();
+      showProgress(true);
+      setProgress(0, photos.length, start, 'Processing');
 
       for (const p of photos) {
         n++;
@@ -527,7 +596,10 @@
           lat: parseFloat(p.lat),
           lon: parseFloat(p.lon),
           path: path,
+          href: joinUrl(origPath, p.file.name),
         });
+        setProgress(n, photos.length, start, 'Processing');
+        await nextFrame();
       }
 
       // One placemark per photo, or one per cluster when grouping.
@@ -540,13 +612,13 @@
             name: many ? first.name + ' (+' + (c.members.length - 1) + ' more)' : first.name,
             lat: c.lat, lon: c.lon,
             group: many,
-            entries: c.members.map((m) => ({ path: m.path, name: m.name, caption: m.caption })),
+            entries: c.members.map((m) => ({ path: m.path, name: m.name, caption: m.caption, href: m.href })),
           };
         });
       } else {
         placemarks = items.map((it) => ({
           name: it.name, lat: it.lat, lon: it.lon, group: false,
-          entries: [{ path: it.path, name: it.name, caption: it.caption }],
+          entries: [{ path: it.path, name: it.name, caption: it.caption, href: it.href }],
         }));
       }
 
@@ -562,6 +634,7 @@
       notice.textContent = 'Something went wrong building the KMZ: ' + (e && e.message ? e.message : e);
     } finally {
       btn.textContent = original;
+      showProgress(false);
       updateBuildState();
     }
   }
@@ -657,6 +730,7 @@
       photos = [];
       filterMissing = false;
       compactUserSet = null;
+      showProgress(false);
       render();
     });
 
@@ -690,5 +764,5 @@
   }
 
   // Expose pure functions for testing in Node/console.
-  window.PhotoKMZ = { readExif, buildKml, crc32, buildZip, haversine, clusterPhotos };
+  window.PhotoKMZ = { readExif, buildKml, crc32, buildZip, haversine, clusterPhotos, joinUrl };
 })();
