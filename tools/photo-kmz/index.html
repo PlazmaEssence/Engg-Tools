@@ -38,9 +38,23 @@
   .options .field { min-width: 180px; }
   .opt-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); user-select: none; }
   .opt-check input { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; }
-  #max-edge-wrap { transition: opacity 0.15s; }
-  #max-edge-wrap .field { min-width: 120px; }
-  #max-edge { width: 90px; }
+  .opt-sep { flex: 0 0 auto; align-self: stretch; width: 1px; background: var(--border); margin: 0 2px; }
+  #max-edge-wrap, #group-dist-wrap { transition: opacity 0.15s; }
+  #max-edge-wrap .field, #group-dist-wrap .field { min-width: 120px; }
+  #max-edge, #group-dist { width: 90px; }
+
+  /* list toolbar (summary + view/filter controls) */
+  #list-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px;
+    padding: 10px 14px; margin-bottom: 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  }
+  #list-summary { font-size: 13px; color: var(--muted); margin-right: auto; }
+  #list-summary strong { color: var(--text); }
+  .warn-text { color: #e88; }
+  .lt-controls { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .lt-controls .opt-check { font-size: 12px; color: var(--muted); }
+  .lt-controls input:disabled + span, .opt-check input:disabled { opacity: 0.4; }
 
   /* photo cards */
   .photo-card { display: flex; gap: 16px; padding: 14px; margin-bottom: 12px; }
@@ -91,6 +105,37 @@
   .loc-badge.set  { background: var(--gold-bg); color: var(--gold); border-color: var(--gold-border); }
   .loc-badge.warn { background: rgba(220,90,90,0.12); color: #e88; border-color: rgba(220,90,90,0.3); }
 
+  /* compact row layout (large imports) */
+  #photo-list.compact { display: flex; flex-direction: column; gap: 8px; }
+  .photo-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+  .pr-thumb { position: relative; flex: 0 0 auto; }
+  .pr-thumb img {
+    width: 44px; height: 44px; object-fit: cover;
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface2); display: block;
+  }
+  .pr-num {
+    position: absolute; top: -7px; left: -7px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--gold); color: #1a1508;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-row input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); padding: 7px 9px; min-width: 0;
+  }
+  .photo-row input:focus { outline: none; border-color: var(--gold-dim); }
+  .pr-name { flex: 1 1 auto; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; }
+  .pr-coord { flex: 0 0 108px; width: 108px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .photo-row .loc-badge { font-size: 10px; padding: 3px 7px; }
+
+  @media (max-width: 620px) {
+    .photo-row { flex-wrap: wrap; }
+    .pr-name { flex: 1 1 100%; order: -1; }
+    .pr-coord { flex: 1 1 0; width: auto; }
+  }
+
   /* build bar */
   .build-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 1rem; }
   #count-label { font-size: 13px; color: var(--muted); margin-right: auto; }
@@ -139,9 +184,28 @@
         <input type="number" id="max-edge" value="1600" min="200" step="100">
       </div>
     </div>
+    <span class="opt-sep" aria-hidden="true"></span>
+    <label class="opt-check">
+      <input type="checkbox" id="group-toggle" checked>
+      Group nearby photos
+    </label>
+    <div id="group-dist-wrap">
+      <div class="field">
+        <label for="group-dist">Within (m)</label>
+        <input type="number" id="group-dist" value="50" min="1" step="5">
+      </div>
+    </div>
   </div>
 
   <div class="notice notice-info" id="build-notice">Add some photos to get started.</div>
+
+  <div id="list-toolbar" style="display:none">
+    <span id="list-summary"></span>
+    <div class="lt-controls">
+      <label class="opt-check"><input type="checkbox" id="filter-missing"> Only ones needing coordinates</label>
+      <label class="opt-check"><input type="checkbox" id="compact-toggle"> Compact view</label>
+    </div>
+  </div>
 
   <div id="photo-list"></div>
   <div id="empty-state">No photos yet.</div>
@@ -161,6 +225,6 @@
   window.EGG_CURRENT_TOOL = 'photo-kmz';
 </script>
 <script src="../../assets/js/site.js?v=1"></script>
-<script src="photo-kmz.js?v=1"></script>
+<script src="photo-kmz.js?v=2"></script>
 </body>
 </html>
