@@ -16,7 +16,7 @@ const EGG_TOOLS = [
     id: 'unit-converter',
     name: 'Unit Converter',
     icon: '⇄',
-    desc: 'Convert between metric and imperial units for length, pressure, temperature, flow, velocity, mass, force, torque, area, volume, and density.',
+    desc: 'Convert between metric and imperial units for length, pressure, temperature, flow, velocity, frequency, mass, force, torque, area, volume, and density.',
     tags: ['Length', 'Pressure', 'Flow', 'Mass'],
     url: 'tools/unit-converter/',
     status: 'live'

@@ -31,10 +31,21 @@ const UC_TIME_UNITS = [
   { key: 'day', label: 'Day',         sym: 'day', factor: 86400 }
 ];
 
+/* Count of cycles/events, used by the compound "cycles per time"
+   category. All factors are relative to a single cycle. A revolution
+   is treated as one cycle. */
+const UC_CYCLE_UNITS = [
+  { key: 'cyc',  label: 'Cycle',      sym: 'cyc',  factor: 1 },
+  { key: 'rev',  label: 'Revolution', sym: 'rev',  factor: 1 },
+  { key: 'kcyc', label: 'Kilocycle',  sym: 'kcyc', factor: 1e3 },
+  { key: 'Mcyc', label: 'Megacycle',  sym: 'Mcyc', factor: 1e6 }
+];
+
 /* dimension key -> unit table, used to look up a compound side */
 const UC_DIM_UNITS = {
   volume: UC_VOLUME_UNITS,
-  time: UC_TIME_UNITS
+  time: UC_TIME_UNITS,
+  cycle: UC_CYCLE_UNITS
 };
 
 const UC_GROUPS = [
@@ -97,6 +108,26 @@ const UC_GROUPS = [
           { key: 'mph', label: 'mph', factor: 0.44704 },
           { key: 'kn', label: 'knot', factor: 0.514444 }
         ]
+      }
+    ]
+  },
+  {
+    label: 'Frequency',
+    categories: [
+      {
+        key: 'frequency', label: 'Frequency', base: 'Hz',
+        units: [
+          { key: 'Hz',  label: 'Hertz (Hz)', factor: 1 },
+          { key: 'kHz', label: 'Kilohertz (kHz)', factor: 1e3 },
+          { key: 'MHz', label: 'Megahertz (MHz)', factor: 1e6 },
+          { key: 'GHz', label: 'Gigahertz (GHz)', factor: 1e9 },
+          { key: 'rpm', label: 'RPM (rev/min)', factor: 1 / 60 }
+        ]
+      },
+      {
+        key: 'cyclerate', label: 'Cycles per Time',
+        compound: { num: 'cycle', den: 'time' },
+        defaults: { fromNum: 'cyc', fromDen: 's', toNum: 'cyc', toDen: 'min' }
       }
     ]
   },
