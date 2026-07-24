@@ -22,6 +22,15 @@ const EGG_TOOLS = [
     status: 'live'
   },
   {
+    id: 'flow-velocity',
+    name: 'Pipe Flow & Velocity',
+    icon: '💧',
+    desc: 'Flow rate and velocity in a pipe — pick HDPE or carbon steel, NPS size and schedule/DR to autofill OD, wall and ID, enter a flow rate with compound units, and download a live-formula Excel sheet.',
+    tags: ['Flow', 'Velocity', 'HDPE', 'Carbon Steel'],
+    url: 'tools/flow-velocity/',
+    status: 'live'
+  },
+  {
     id: 'tmin-calculator',
     name: 'Pipe Wall Thickness (tmin)',
     icon: '⭕',
