@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KML → Excel · Egg Tools</title>
+<meta name="description" content="Turn a KML route into an Excel spreadsheet — one row per vertex with longitude, latitude, elevation, segment length and cumulative length (chainage). Runs entirely in your browser.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/theme.css?v=1">
+<style>
+  /* drop zone */
+  .dropzone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 1.25rem;
+  }
+  .dropzone:hover, .dropzone:focus-visible { border-color: var(--gold-dim); background: var(--gold-bg); outline: none; }
+  .dropzone.drag { border-color: var(--gold); background: var(--gold-bg); }
+  .dropzone .dz-icon { font-size: 34px; line-height: 1; }
+  .dropzone .dz-title { font-size: 15px; font-weight: 600; color: var(--text); margin-top: 10px; }
+  .dropzone .dz-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* options row */
+  .options {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+    padding: 16px; margin-bottom: 1.25rem;
+  }
+  .options .field { min-width: 150px; }
+  .opt-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); user-select: none; }
+  .opt-check input { width: 16px; height: 16px; accent-color: var(--gold); cursor: pointer; }
+  .opt-sep { flex: 0 0 auto; align-self: stretch; width: 1px; background: var(--border); margin: 0 2px; }
+
+  /* preview table */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    margin-bottom: 1rem;
+  }
+  table.preview {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+  }
+  table.preview th, table.preview td {
+    padding: 7px 12px;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+  }
+  table.preview th {
+    position: sticky; top: 0;
+    background: var(--surface2);
+    color: var(--faint);
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    text-align: right;
+    z-index: 1;
+  }
+  table.preview td.txt, table.preview th.txt { text-align: left; }
+  table.preview tr:last-child td { border-bottom: none; }
+  table.preview tbody tr:hover td { background: var(--surface2); }
+  .preview-more { font-size: 12px; color: var(--faint); padding: 8px 12px; text-align: center; }
+
+  .build-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 1rem; }
+  #count-label { font-size: 13px; color: var(--muted); margin-right: auto; }
+  .notice { margin-bottom: 1rem; }
+
+  #empty-state { text-align: center; color: var(--faint); font-size: 13px; padding: 8px 0 4px; }
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header"></header>
+
+<main>
+  <div class="breadcrumb"><a href="../../index.html">Egg Tools</a> <span>/</span> <span>KML → Excel</span></div>
+
+  <div class="intro">
+    <h1>KML → Excel</h1>
+    <p>Drop in a KML route and download an Excel spreadsheet — one row per vertex along the line, with its longitude, latitude and elevation, plus the segment length and a running <strong>cumulative length</strong> (chainage) down the path. Everything runs in your browser — nothing is uploaded.</p>
+  </div>
+
+  <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Add a KML file">
+    <div class="dz-icon">🗺️</div>
+    <div class="dz-title">Drop a .kml file here, or click to choose</div>
+    <div class="dz-sub">Reads LineString routes and gx:Track paths · coordinates stay on your machine</div>
+  </div>
+  <input type="file" id="file-input" accept=".kml,application/vnd.google-earth.kml+xml,text/xml,application/xml" hidden>
+
+  <div class="options input-panel">
+    <div class="field">
+      <label for="length-unit">Length unit</label>
+      <select id="length-unit">
+        <option value="m">Metres (m)</option>
+        <option value="km">Kilometres (km)</option>
+        <option value="ft">Feet (ft)</option>
+        <option value="mi">Miles (mi)</option>
+      </select>
+    </div>
+    <span class="opt-sep" aria-hidden="true"></span>
+    <label class="opt-check">
+      <input type="checkbox" id="use-3d">
+      Include elevation in length (3D)
+    </label>
+  </div>
+
+  <div class="notice notice-info" id="status-notice">Choose a KML file to get started.</div>
+
+  <div id="empty-state" style="display:none">No route data yet.</div>
+
+  <div class="table-wrap" id="table-wrap" style="display:none">
+    <table class="preview" id="preview"></table>
+    <div class="preview-more" id="preview-more" style="display:none"></div>
+  </div>
+
+  <div class="build-bar" id="build-bar" style="display:none">
+    <span id="count-label"></span>
+    <button class="btn btn-ghost" id="clear-btn">Clear</button>
+    <button class="btn btn-gold" id="build-btn" disabled>Download Excel</button>
+  </div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="../../assets/js/tools-registry.js?v=3"></script>
+<script>
+  window.EGG_BASE = '../../';
+  window.EGG_CURRENT_TOOL = 'kml-to-excel';
+</script>
+<script src="../../assets/js/site.js?v=1"></script>
+<script src="kml-to-excel.js?v=1"></script>
+</body>
+</html>

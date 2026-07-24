@@ -47,5 +47,14 @@ const EGG_TOOLS = [
     tags: ['KMZ', 'Google Earth', 'GPS', 'Photos'],
     url: 'tools/photo-kmz/',
     status: 'live'
+  },
+  {
+    id: 'kml-to-excel',
+    name: 'KML → Excel',
+    icon: '🗺️',
+    desc: 'Convert a KML route into an Excel spreadsheet — one row per vertex with longitude, latitude and elevation, plus segment length and a running cumulative length (chainage) along the path. Runs entirely in your browser.',
+    tags: ['KML', 'Excel', 'Chainage', 'Survey'],
+    url: 'tools/kml-to-excel/',
+    status: 'live'
   }
 ];
