@@ -39,6 +39,7 @@
 
   // ---- unit helpers ------------------------------------------
   const find = (table, key) => table.find((u) => u.key === key);
+  const findSize = (table, nps) => table.find((s) => s.nps === nps);
   const dimFactor = (key) => find(FV_DIM_UNITS, key).factor;   // -> m
   const volFactor = (key) => find(FV_VOLUME_UNITS, key).factor; // -> m³
   const timeFactor = (key) => find(FV_TIME_UNITS, key).factor;  // -> s
@@ -93,7 +94,7 @@
   function ratingOptions() {
     let html;
     if (category === 'cs') {
-      const size = find(CS_SIZES, sizeEl.value);
+      const size = findSize(CS_SIZES, sizeEl.value);
       const keys = CS_SCHED_ORDER.filter((k) => size && size.walls[k] != null);
       html = keys.map((k) => {
         const label = /^\d/.test(k) ? 'Sch ' + k : k; // "40" -> "Sch 40"; STD/XS/XXS as-is
@@ -135,7 +136,7 @@
   function populateRatings() {
     ratingEl.innerHTML = ratingOptions();
     if (category === 'cs') {
-      ratingEl.value = find(CS_SIZES, sizeEl.value).walls.STD != null ? 'STD' : ratingEl.options[0].value;
+      ratingEl.value = findSize(CS_SIZES, sizeEl.value).walls.STD != null ? 'STD' : ratingEl.options[0].value;
     } else {
       ratingEl.value = HDPE_DR.includes(11) ? '11' : String(HDPE_DR[0]);
     }
@@ -154,7 +155,7 @@
 
   function applySize() {
     populateRatings();
-    const size = find(sizeList(), sizeEl.value);
+    const size = findSize(sizeList(), sizeEl.value);
     setDimField(odEl, size.od_in);
     applyRating();
   }
@@ -162,7 +163,7 @@
   // Set wall (and ID) from the current schedule/DR selection.
   function applyRating() {
     const key = ratingEl.value;
-    const size = find(sizeList(), sizeEl.value);
+    const size = findSize(sizeList(), sizeEl.value);
     setDimField(odEl, size.od_in);
     if (key !== 'custom') {
       let wallIn;
