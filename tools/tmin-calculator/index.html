@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pipe Wall Thickness (tmin) · Egg Tools</title>
-<meta name="description" content="Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4.">
+<meta name="description" content="Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4, with HDPE/carbon-steel NPS and schedule/DR quick-fill (ASME B36.10).">
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
 
@@ -35,6 +35,9 @@
   }
 
   .formula-box strong { color: var(--text); font-weight: 500; }
+
+  .notice-success { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--text); }
+  .notice-success svg { color: var(--green); }
 </style>
 </head>
 <body>
@@ -51,7 +54,7 @@
 
   <div class="notice notice-info">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <div>Engineering aid only, not a substitute for code compliance review. The material quick-fills below are a small, deliberately limited set of well-established, ambient-temperature values — always verify <strong>S, E, W, Y, F</strong> against the current edition of the applicable code, your project specification, and design temperature before use.</div>
+    <div>Engineering aid only, not a substitute for code compliance review. The material quick-fills below are a small, deliberately limited set of well-established, ambient-temperature values — always verify <strong>S, E, W, Y, F</strong> against the current edition of the applicable code, your project specification, and design temperature before use. Pipe size/schedule quick-fill follows ASME B36.10M for carbon steel; HDPE uses IPS ODs with wall = OD ÷ DR.</div>
   </div>
 
   <div class="code-row" id="code-row"></div>
@@ -65,6 +68,9 @@
       </select>
     </div>
   </div>
+
+  <div class="row-label">Pipe schedule quick-fill (ASME B36.10)</div>
+  <div class="code-row" id="pipe-cat-row"></div>
 
   <div class="input-panel" style="margin-bottom:1.5rem;">
     <div class="panel-header"><label>Inputs</label></div>
@@ -91,6 +97,8 @@
     </div>
   </div>
 
+  <div id="adequacy-slot"></div>
+
   <div class="formula-box" id="formula-box"></div>
 </main>
 
@@ -102,6 +110,7 @@
   window.EGG_CURRENT_TOOL = 'tmin-calculator';
 </script>
 <script src="../../assets/js/site.js?v=1"></script>
-<script src="tmin.js"></script>
+<script src="../../assets/js/pipe-data.js?v=2"></script>
+<script src="tmin.js?v=2"></script>
 </body>
 </html>

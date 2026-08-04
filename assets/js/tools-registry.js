@@ -34,8 +34,8 @@ const EGG_TOOLS = [
     id: 'tmin-calculator',
     name: 'Pipe Wall Thickness (tmin)',
     icon: '⭕',
-    desc: 'Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4.',
-    tags: ['B31.3', 'B31.4', 'Wall Thickness'],
+    desc: 'Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4, with HDPE/carbon-steel NPS and schedule/DR quick-fill (ASME B36.10) checked against the result.',
+    tags: ['B31.3', 'B31.4', 'Wall Thickness', 'HDPE', 'Carbon Steel'],
     url: 'tools/tmin-calculator/',
     status: 'live'
   },

@@ -1,9 +1,11 @@
 /* ============================================================
-   Egg Tools — Pipe Flow & Velocity: pipe & unit data (data only)
+   Egg Tools — shared pipe dimension & unit data (data only)
 
-   Loaded before flow-velocity.js. No logic here — just tables the
-   tool reads. To add a size, schedule, DR or unit, edit the data
-   below; nothing in flow-velocity.js hard-codes a size.
+   Loaded before flow-velocity.js and tmin.js — both tools read
+   the same CS_SIZES / HDPE_SIZES / HDPE_DR / CS_SCHED_ORDER tables
+   so a size, schedule or DR only has to be maintained in one place.
+   To add a size, schedule, DR or unit, edit the data below; nothing
+   in either tool's .js hard-codes a size.
 
    Dimensions
    ----------
@@ -36,6 +38,9 @@ const CS_SCHED_ORDER = ['STD', 'XS', 'XXS', '10', '20', '30', '40', '60', '80', 
 
 /* Carbon steel — ASME B36.10M. od_in and every wall value in inches. */
 const CS_SIZES = [
+  { nps: '1/8',   od_in: 0.405,  walls: { '10': 0.049, '40': 0.068, STD: 0.068, '80': 0.095, XS: 0.095 } },
+  { nps: '1/4',   od_in: 0.540,  walls: { '10': 0.065, '40': 0.088, STD: 0.088, '80': 0.119, XS: 0.119 } },
+  { nps: '3/8',   od_in: 0.675,  walls: { '10': 0.065, '40': 0.091, STD: 0.091, '80': 0.126, XS: 0.126 } },
   { nps: '1/2',   od_in: 0.840,  walls: { '10': 0.083, '40': 0.109, STD: 0.109, '80': 0.147, XS: 0.147, '160': 0.188, XXS: 0.294 } },
   { nps: '3/4',   od_in: 1.050,  walls: { '10': 0.083, '40': 0.113, STD: 0.113, '80': 0.154, XS: 0.154, '160': 0.219, XXS: 0.308 } },
   { nps: '1',     od_in: 1.315,  walls: { '10': 0.109, '40': 0.133, STD: 0.133, '80': 0.179, XS: 0.179, '160': 0.250, XXS: 0.358 } },
