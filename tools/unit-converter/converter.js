@@ -169,6 +169,23 @@ const UC_GROUPS = [
     ]
   },
   {
+    label: 'Power',
+    categories: [
+      {
+        key: 'power', label: 'Power', base: 'W',
+        units: [
+          { key: 'W', label: 'Watt (W)', factor: 1 },
+          { key: 'kW', label: 'Kilowatt (kW)', factor: 1e3 },
+          { key: 'MW', label: 'Megawatt (MW)', factor: 1e6 },
+          { key: 'hp', label: 'Horsepower, mechanical (hp)', factor: 745.6998715822702 },
+          { key: 'hpM', label: 'Horsepower, metric (PS)', factor: 735.49875 },
+          { key: 'btuh', label: 'BTU/h', factor: 0.29307107017222 },
+          { key: 'ton', label: 'Ton of refrigeration', factor: 3516.8528420666 }
+        ]
+      }
+    ]
+  },
+  {
     label: 'Area, Volume & Density',
     categories: [
       {
