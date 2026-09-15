@@ -9,6 +9,13 @@
      2. Add one entry below
    Nothing else needs to change — the home page and nav update
    automatically.
+
+   status:
+     'live'         — shown normally, linked
+     'coming-soon'  — shown grayed-out, not linked (teases an upcoming tool)
+     'hidden'       — not shown anywhere (nav or home grid); the tool's
+                      files stay in the repo and reachable by direct URL,
+                      it's just not advertised while still in development
    ============================================================ */
 
 const EGG_TOOLS = [
@@ -37,7 +44,7 @@ const EGG_TOOLS = [
     desc: 'Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4, with HDPE/carbon-steel NPS and schedule/DR quick-fill (ASME B36.10) checked against the result.',
     tags: ['B31.3', 'B31.4', 'Wall Thickness', 'HDPE', 'Carbon Steel'],
     url: 'tools/tmin-calculator/',
-    status: 'live'
+    status: 'hidden'
   },
   {
     id: 'thermal-growth',
@@ -64,6 +71,15 @@ const EGG_TOOLS = [
     desc: 'Convert a KML route into an Excel spreadsheet — one row per vertex with longitude, latitude and elevation, plus segment length and a running cumulative length (chainage) along the path. Runs entirely in your browser.',
     tags: ['KML', 'Excel', 'Chainage', 'Survey'],
     url: 'tools/kml-to-excel/',
+    status: 'live'
+  },
+  {
+    id: 'plot-log',
+    name: 'Plot Log',
+    icon: '📈',
+    desc: 'Digitize a pump performance curve from an image — calibrate the axes (head, power, efficiency, NPSHr all on their own scales), trace or place points, and export the data. Runs entirely in your browser.',
+    tags: ['Pump Curves', 'Digitizer', 'Head', 'Efficiency'],
+    url: 'tools/plot-log/',
     status: 'live'
   }
 ];

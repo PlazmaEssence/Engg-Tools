@@ -44,11 +44,22 @@ Every page loads `tools-registry.js` then `site.js`, and sets two globals first:
      desc: 'B31.3 / B31.4 pressure design thickness calculator.',
      tags: ['B31.3', 'B31.4'],
      url: 'tools/wall-thickness/',
-     status: 'live' // or 'coming-soon' to list it grayed-out before it's finished
+     status: 'live' // 'coming-soon' grays it out, 'hidden' drops it from the nav/grid entirely
    }
    ```
 
 That's it — the home page grid and every page's "Tools" nav dropdown pick it up automatically.
+A tool set to `status: 'hidden'` stays fully in the repo and reachable by its direct URL, it's
+just not advertised — useful while a tool is mid-rework and you don't want it discoverable yet.
+
+### Tools built elsewhere (Plot Log)
+
+`tools/plot-log/` isn't developed in this repo — it's the compiled output of
+[plot-log](https://github.com/PlazmaEssence/plot-log), a separate Vite/TypeScript project (its
+own build/tests/CI, since it needs a real bundler). To publish an update: in the `plot-log` repo,
+run `npm run build`, then copy `dist/index.html` and `dist/assets/*` over
+`Engg-Tools/tools/plot-log/` and commit. Its Vite `base` is a relative `./`, so the same build
+works both on plot-log's own Pages site and nested here.
 
 ## Cache-busting (making pushes show up)
 

@@ -13,7 +13,7 @@
     const el = document.getElementById('site-header');
     if (!el) return;
 
-    const items = EGG_TOOLS.map(t => `
+    const items = EGG_TOOLS.filter(t => t.status !== 'hidden').map(t => `
       <a class="nav-tools-item${t.id === currentTool ? ' current' : ''}"
          href="${t.status === 'live' ? base + t.url : '#'}"
          ${t.status !== 'live' ? 'onclick="return false"' : ''}>
@@ -56,7 +56,7 @@
   function renderToolGrid() {
     const el = document.getElementById('tool-grid');
     if (!el) return;
-    el.innerHTML = EGG_TOOLS.map(t => `
+    el.innerHTML = EGG_TOOLS.filter(t => t.status !== 'hidden').map(t => `
       <a class="tool-card${t.status !== 'live' ? ' coming-soon' : ''}" href="${base + t.url}">
         <div class="tc-icon">${t.icon}</div>
         <div class="tc-title">${t.name}${t.status !== 'live' ? ' (soon)' : ''}</div>
