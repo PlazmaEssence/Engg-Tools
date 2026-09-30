@@ -1,5 +1,5 @@
 /* ============================================================
-   Egg Tools — shared design system
+   Egg Tools - shared design system
    Used by every page (home + each tool). Keep this file the
    single source of truth for color, type, and component styles
    so new tools automatically match the rest of the site.
@@ -15,7 +15,7 @@
   --muted:     #8a8880;
   --faint:     #3a3a40;
 
-  /* egg-yolk gold — primary accent */
+  /* egg-yolk gold - primary accent */
   --gold:      #e0b23c;
   --gold-dim:  #8a6a1f;
   --gold-bg:   rgba(224,178,60,0.10);

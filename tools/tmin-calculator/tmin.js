@@ -1,5 +1,5 @@
 /* ============================================================
-   Egg Tools — Pipe Wall Thickness (tmin) calculator
+   Egg Tools - Pipe Wall Thickness (tmin) calculator
    Straight pipe under internal pressure.
 
    B31.3 §304.1.2 (thin-wall, t < D/6):
@@ -11,7 +11,7 @@
    Both then get: tm = t + c   (corrosion/mechanical allowance)
                   t_nominal_min = tm / (1 - mill tolerance)
 
-   Material quick-fills are intentionally minimal — only values
+   Material quick-fills are intentionally minimal - only values
    well established enough to state with confidence (ambient-
    temperature basic allowable stress for common CS pipe under
    B31.3, and SMYS values that are definitional to the API 5L
@@ -33,17 +33,17 @@ const IN_TO_MM = 25.4;
 
 const CODES = {
   b313: {
-    label: 'ASME B31.3 — Process Piping',
+    label: 'ASME B31.3 - Process Piping',
     sLabel: 'Allowable Stress, S (Table A-1)',
     materials: [
       { label: 'Custom / manual entry', S_psi: null },
-      { label: 'A106 Gr. B / A53 Gr. B (smls/ERW CS) — ambient ≤100°F', S_psi: 20000 },
-      { label: 'A333 Gr. 6 (low-temp CS) — ambient', S_psi: 20000 }
+      { label: 'A106 Gr. B / A53 Gr. B (smls/ERW CS) - ambient ≤100°F', S_psi: 20000 },
+      { label: 'A333 Gr. 6 (low-temp CS) - ambient', S_psi: 20000 }
     ],
     fields: ['E', 'W', 'Y']
   },
   b314: {
-    label: 'ASME B31.4 — Liquid Pipelines',
+    label: 'ASME B31.4 - Liquid Pipelines',
     sLabel: 'Specified Min. Yield Strength, SMYS',
     materials: [
       { label: 'Custom / manual entry', S_psi: null },
@@ -63,7 +63,7 @@ const CODES = {
 (function initTmin() {
   let currentCode = 'b313';
   let currentUnit = 'us'; // 'us' = psi/in, 'si' = MPa/mm
-  let pipeCategory = 'cs'; // 'cs' | 'hdpe' — drives the schedule/DR quick-fill
+  let pipeCategory = 'cs'; // 'cs' | 'hdpe' - drives the schedule/DR quick-fill
 
   const codeRowEl = document.getElementById('code-row');
   const pipeCatRowEl = document.getElementById('pipe-cat-row');
@@ -82,12 +82,12 @@ const CODES = {
   function currentSize() { return findSize(document.getElementById('f-nps').value); }
 
   function npsOptionsHtml() {
-    return '<option value="">—</option>' +
+    return '<option value="">-</option>' +
       pipeSizeList().map((s) => `<option value="${s.nps}">NPS ${s.nps}</option>`).join('');
   }
 
   function schedOptionsHtml(size) {
-    if (!size) return '<option value="">—</option>';
+    if (!size) return '<option value="">-</option>';
     if (pipeCategory === 'cs') {
       return CS_SCHED_ORDER.filter((k) => size.walls[k] != null).map((k) => {
         const label = /^\d/.test(k) ? 'Sch ' + k : k; // "40" -> "Sch 40"; STD/XS/XXS as-is
@@ -195,7 +195,7 @@ const CODES = {
     </div>`;
     html += `<div class="field">
       <label>Schedule / DR (quick-fill wall)</label>
-      <select id="f-sched"><option value="">—</option></select>
+      <select id="f-sched"><option value="">-</option></select>
     </div>`;
     html += fieldTemplate('f-D', `Outside Diameter, D (${lLabel()})`, currentUnit === 'us' ? '4.500' : '114.30');
     html += fieldTemplate('f-t-actual', `Selected Nominal Wall, t_actual (${lLabel()})`, '', { hint: 'Autofilled from schedule/DR above; checked against tn below.' });
@@ -212,7 +212,7 @@ const CODES = {
       html += fieldTemplate('f-W', 'Weld Joint Strength Reduction, W', '1.00', { cls: 'b313-only', hint: '1.00 unless design temp exceeds Table 302.3.5 threshold.' });
       html += fieldTemplate('f-Y', 'Coefficient, Y', '0.40', { cls: 'b313-only', hint: 'Valid ≤900°F (482°C) for ferritic/austenitic steel.' });
     } else {
-      html += fieldTemplate('f-F', 'Design Factor, F', '0.72', { cls: 'b314-only', hint: 'Standard 0.72; lower for certain crossings — confirm.' });
+      html += fieldTemplate('f-F', 'Design Factor, F', '0.72', { cls: 'b314-only', hint: 'Standard 0.72; lower for certain crossings - confirm.' });
     }
 
     html += fieldTemplate('f-c', `Corrosion Allowance, c (${lLabel()})`, '0.0625', { hint: 'Plus any threading/mechanical allowance.' });
@@ -295,7 +295,7 @@ const CODES = {
   });
 
   function trim(n) {
-    if (!isFinite(n)) return '—';
+    if (!isFinite(n)) return '-';
     if (Math.abs(n) >= 1e6 || (Math.abs(n) < 1e-4 && n !== 0)) return n.toExponential(4);
     return parseFloat(n.toPrecision(6)).toString();
   }
@@ -327,7 +327,7 @@ const CODES = {
         if (!thinWallOk) {
           warningSlotEl.innerHTML = `<div class="notice notice-danger">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <div>t ≥ D/6 or P/(S·E) &gt; 0.385 — this is outside the thin-wall assumption behind this formula. Per B31.3 §304.1.2(b), use the thick-wall equations instead; the results below are not valid for this case.</div>
+            <div>t ≥ D/6 or P/(S·E) &gt; 0.385 - this is outside the thin-wall assumption behind this formula. Per B31.3 §304.1.2(b), use the thick-wall equations instead; the results below are not valid for this case.</div>
           </div>`;
         }
       }
@@ -364,11 +364,11 @@ const CODES = {
     const schedKey = document.getElementById('f-sched').value;
     let schedLabel = '';
     if (schedKey) schedLabel = pipeCategory === 'cs' ? (/^\d/.test(schedKey) ? 'Sch ' + schedKey : schedKey) : 'DR ' + schedKey;
-    const sizeLabel = nps ? `NPS ${nps}${schedLabel ? ', ' + schedLabel : ''} — ` : '';
+    const sizeLabel = nps ? `NPS ${nps}${schedLabel ? ', ' + schedLabel : ''} - ` : '';
 
     adequacySlotEl.innerHTML = `<div class="notice ${ok ? 'notice-success' : 'notice-danger'}">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div>${sizeLabel}selected nominal wall t_actual = ${trim(actual)} ${lLabel()} ${ok ? '≥' : '<'} required min. nominal thickness tn = ${trim(tnom)} ${lLabel()} — ${ok ? 'adequate' : 'insufficient; select a heavier schedule/DR or adjust the inputs'}.</div>
+      <div>${sizeLabel}selected nominal wall t_actual = ${trim(actual)} ${lLabel()} ${ok ? '≥' : '<'} required min. nominal thickness tn = ${trim(tnom)} ${lLabel()} - ${ok ? 'adequate' : 'insufficient; select a heavier schedule/DR or adjust the inputs'}.</div>
     </div>`;
   }
 

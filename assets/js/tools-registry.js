@@ -1,5 +1,5 @@
 /* ============================================================
-   Egg Tools — tool registry
+   Egg Tools - tool registry
    Single source of truth for every tool on the site. The home
    page's tool grid and every page's header nav dropdown are
    both generated from this list.
@@ -7,13 +7,13 @@
    To add a new tool:
      1. Build it in tools/<id>/index.html (+ its own .js file)
      2. Add one entry below
-   Nothing else needs to change — the home page and nav update
+   Nothing else needs to change - the home page and nav update
    automatically.
 
    status:
-     'live'         — shown normally, linked
-     'coming-soon'  — shown grayed-out, not linked (teases an upcoming tool)
-     'hidden'       — not shown anywhere (nav or home grid); the tool's
+     'live'         - shown normally, linked
+     'coming-soon'  - shown grayed-out, not linked (teases an upcoming tool)
+     'hidden'       - not shown anywhere (nav or home grid); the tool's
                       files stay in the repo and reachable by direct URL,
                       it's just not advertised while still in development
    ============================================================ */
@@ -32,7 +32,7 @@ const EGG_TOOLS = [
     id: 'flow-velocity',
     name: 'Pipe Flow & Velocity',
     icon: '💧',
-    desc: 'Flow rate and velocity in a pipe — pick HDPE or carbon steel, NPS size and schedule/DR to autofill OD, wall and ID, enter a flow rate with compound units, and download a live-formula Excel sheet.',
+    desc: 'Flow rate and velocity in a pipe - pick HDPE or carbon steel, NPS size and schedule/DR to autofill OD, wall and ID, enter a flow rate with compound units, and download a live-formula Excel sheet.',
     tags: ['Flow', 'Velocity', 'HDPE', 'Carbon Steel'],
     url: 'tools/flow-velocity/',
     status: 'live'
@@ -41,7 +41,7 @@ const EGG_TOOLS = [
     id: 'tmin-calculator',
     name: 'Pipe Wall Thickness (tmin)',
     icon: '⭕',
-    desc: 'Minimum required wall thickness for straight pipe under internal pressure — ASME B31.3 and B31.4, with HDPE/carbon-steel NPS and schedule/DR quick-fill (ASME B36.10) checked against the result.',
+    desc: 'Minimum required wall thickness for straight pipe under internal pressure - ASME B31.3 and B31.4, with HDPE/carbon-steel NPS and schedule/DR quick-fill (ASME B36.10) checked against the result.',
     tags: ['B31.3', 'B31.4', 'Wall Thickness', 'HDPE', 'Carbon Steel'],
     url: 'tools/tmin-calculator/',
     status: 'hidden'
@@ -59,7 +59,7 @@ const EGG_TOOLS = [
     id: 'photo-kmz',
     name: 'Photo → KMZ',
     icon: '📍',
-    desc: 'Turn geotagged photos into a KMZ for Google Earth — one pin per photo, click to see the image. Reads GPS from each photo, or set coordinates by hand. Runs entirely in your browser.',
+    desc: 'Turn geotagged photos into a KMZ for Google Earth - one pin per photo, click to see the image. Reads GPS from each photo, or set coordinates by hand. Runs entirely in your browser.',
     tags: ['KMZ', 'Google Earth', 'GPS', 'Photos'],
     url: 'tools/photo-kmz/',
     status: 'live'
@@ -68,7 +68,7 @@ const EGG_TOOLS = [
     id: 'kml-to-excel',
     name: 'KML → Excel',
     icon: '🗺️',
-    desc: 'Convert a KML route into an Excel spreadsheet — one row per vertex with longitude, latitude and elevation, plus segment length and a running cumulative length (chainage) along the path. Runs entirely in your browser.',
+    desc: 'Convert a KML route into an Excel spreadsheet - one row per vertex with longitude, latitude and elevation, plus segment length and a running cumulative length (chainage) along the path. Runs entirely in your browser.',
     tags: ['KML', 'Excel', 'Chainage', 'Survey'],
     url: 'tools/kml-to-excel/',
     status: 'live'
@@ -77,7 +77,7 @@ const EGG_TOOLS = [
     id: 'plot-log',
     name: 'Plot Log',
     icon: '📈',
-    desc: 'Digitize a pump performance curve from an image — calibrate the axes (head, power, efficiency, NPSHr all on their own scales), trace or place points, and export the data. Runs entirely in your browser.',
+    desc: 'Digitize a pump performance curve from an image - calibrate the axes (head, power, efficiency, NPSHr all on their own scales), trace or place points, and export the data. Runs entirely in your browser.',
     tags: ['Pump Curves', 'Digitizer', 'Head', 'Efficiency'],
     url: 'tools/plot-log/',
     status: 'live'

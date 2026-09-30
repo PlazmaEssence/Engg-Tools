@@ -5,7 +5,7 @@
    coordinate values) plus segment length and a running
    cumulative length (chainage) along each path.
 
-   Everything runs in the browser — no uploads, no libraries.
+   Everything runs in the browser - no uploads, no libraries.
    The two "hard" pieces are hand-rolled and small:
      - a KML reader (LineString + gx:Track vertices via DOMParser)
      - a minimal XLSX writer (an .xlsx is just a zip of a few
@@ -487,7 +487,7 @@
     if (rows.length > PREVIEW_LIMIT) {
       more.style.display = '';
       more.textContent = 'Showing first ' + PREVIEW_LIMIT + ' of ' + rows.length +
-        ' rows — the download includes them all.';
+        ' rows - the download includes them all.';
     } else {
       more.style.display = 'none';
     }
@@ -511,7 +511,7 @@
         render();
         notice.className = 'notice notice-danger';
         notice.textContent = 'No LineString routes or gx:Track paths found in this KML. ' +
-          'This tool reads polyline routes — a KML of individual point pins won\'t produce a chainage.';
+          'This tool reads polyline routes - a KML of individual point pins won\'t produce a chainage.';
         return;
       }
       paths = found;

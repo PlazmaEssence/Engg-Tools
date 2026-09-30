@@ -1,5 +1,5 @@
 /* ============================================================
-   Egg Tools — Pipe Flow & Velocity
+   Egg Tools - Pipe Flow & Velocity
    Pick a pipe (HDPE or carbon steel), NPS size and schedule/DR,
    and the tool autofills OD, wall thickness and inner diameter.
    OD/wall/ID stay editable and linked:
@@ -9,7 +9,7 @@
    Any manual edit flips the schedule/DR dropdown to "Custom".
 
    Enter a flow rate (volume ÷ time, same compound dropdowns as the
-   Unit Converter) to get the velocity — or enter a velocity to get
+   Unit Converter) to get the velocity - or enter a velocity to get
    the required flow rate. The two are linked live:
        A = π/4 · ID²      v = Q / A      Q = v · A
 
@@ -17,7 +17,7 @@
    carries a factor to the SI base. The "Download Excel" button
    writes a small .xlsx whose cells are live formulas (with the
    unit-conversion factors as their own cells), so the sheet
-   recalculates if you change an input — no pipe lookup, just the
+   recalculates if you change an input - no pipe lookup, just the
    calculation.
 
    Dimensional data lives in pipe-data.js, loaded before this file.
@@ -35,7 +35,7 @@
   let curNum = 'usgal';      // flow numerator (volume) key
   let curDen = 'min';        // flow denominator (time) key
   let curVel = 'fps';        // velocity unit key
-  let driver = 'flow';       // 'flow' | 'velocity' — which field was last set
+  let driver = 'flow';       // 'flow' | 'velocity' - which field was last set
 
   // ---- unit helpers ------------------------------------------
   const find = (table, key) => table.find((u) => u.key === key);
@@ -230,7 +230,7 @@
 
   function updateFormula(A, badGeom) {
     if (badGeom) {
-      formulaEl.textContent = 'Inner diameter must be positive — check OD and wall thickness.';
+      formulaEl.textContent = 'Inner diameter must be positive - check OD and wall thickness.';
       return;
     }
     const idM = fieldM(idEl);
@@ -294,7 +294,7 @@
   }
 
   /* =========================================================
-     Excel export — minimal XLSX writer with live formulas.
+     Excel export - minimal XLSX writer with live formulas.
      Adapted from tools/kml-to-excel/kml-to-excel.js and extended
      with a formula cell type. An .xlsx is just a zip of a few XML
      parts written with the store method + CRC32.
@@ -486,7 +486,7 @@
     const rows = [];
     const R = (r, c, kind, val, s, f) => rows.push({ r, c, kind, v: val, s, f });
 
-    R(1, 1, 'str', 'Pipe Flow & Velocity — calculation', 2);
+    R(1, 1, 'str', 'Pipe Flow & Velocity - calculation', 2);
     R(2, 1, 'str', 'Change any input or factor cell (yellow result recalculates).', 0);
 
     R(4, 1, 'str', 'INPUTS', 1);

@@ -1,7 +1,7 @@
 /* ============================================================
-   Egg Tools — shared pipe dimension & unit data (data only)
+   Egg Tools - shared pipe dimension & unit data (data only)
 
-   Loaded before flow-velocity.js and tmin.js — both tools read
+   Loaded before flow-velocity.js and tmin.js - both tools read
    the same CS_SIZES / HDPE_SIZES / HDPE_DR / CS_SCHED_ORDER tables
    so a size, schedule or DR only has to be maintained in one place.
    To add a size, schedule, DR or unit, edit the data below; nothing
@@ -17,7 +17,7 @@
                for a given size are included.
    HDPE_SIZES: HDPE on the IPS (Iron Pipe Size) OD basis, so the OD
                equals the carbon-steel OD for the same NPS. Wall is
-               NOT tabulated — for HDPE, wall = OD / DR.
+               NOT tabulated - for HDPE, wall = OD / DR.
    HDPE_DR   : standard dimension ratios (DR = OD / wall).
 
    These tables are an engineering aid. Always verify against the
@@ -36,7 +36,7 @@
    then numeric schedules ascending. */
 const CS_SCHED_ORDER = ['STD', 'XS', 'XXS', '10', '20', '30', '40', '60', '80', '100', '120', '140', '160'];
 
-/* Carbon steel — ASME B36.10M. od_in and every wall value in inches. */
+/* Carbon steel - ASME B36.10M. od_in and every wall value in inches. */
 const CS_SIZES = [
   { nps: '1/8',   od_in: 0.405,  walls: { '10': 0.049, '40': 0.068, STD: 0.068, '80': 0.095, XS: 0.095 } },
   { nps: '1/4',   od_in: 0.540,  walls: { '10': 0.065, '40': 0.088, STD: 0.088, '80': 0.119, XS: 0.119 } },
@@ -74,7 +74,7 @@ const CS_SIZES = [
   { nps: '60',    od_in: 60.000, walls: { STD: 0.375, XS: 0.500, '20': 0.625 } }
 ];
 
-/* HDPE — IPS OD basis (OD matches carbon steel for the same NPS).
+/* HDPE - IPS OD basis (OD matches carbon steel for the same NPS).
    Wall is computed as OD / DR, so only the OD is tabulated here. */
 const HDPE_SIZES = [
   { nps: '3/4',   od_in: 1.050 },

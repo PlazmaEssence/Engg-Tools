@@ -1,5 +1,5 @@
 /* ============================================================
-   Egg Tools — Pipe Thermal Growth
+   Egg Tools - Pipe Thermal Growth
    Free (unrestrained) axial expansion of a pipe run:
 
      ΔL = α · L · ΔT           ΔT = T_high − T_install
@@ -13,7 +13,7 @@
    by 1.8, since one °C step spans 1.8 °F worth of strain.
 
    Material quick-fills are approximate mean coefficients near
-   room temperature — α is temperature-dependent, so real design
+   room temperature - α is temperature-dependent, so real design
    should use the mean coefficient between installation and
    design temperature from the applicable code table.
    ============================================================ */
@@ -59,7 +59,7 @@ const TG_ALPHA = {
 const TG_ALPHA_ORDER = ['um_m_C', 'mm_m_C', 'per_C', 'per_K', 'uin_in_F', 'per_F', 'per_R'];
 
 /* material quick-fills (TG_MATERIALS) live in materials.js, loaded
-   before this script — edit that data file to add materials. */
+   before this script - edit that data file to add materials. */
 
 function tgAlphaPerC(value, key) {
   const u = TG_ALPHA[key];
@@ -86,7 +86,7 @@ function tgAlphaPerC(value, key) {
   }
 
   function trim(n) {
-    if (!isFinite(n)) return '—';
+    if (!isFinite(n)) return '-';
     if (Math.abs(n) >= 1e6 || (Math.abs(n) < 1e-4 && n !== 0)) return n.toExponential(4);
     return parseFloat(n.toPrecision(6)).toString();
   }

@@ -1,15 +1,15 @@
 /* ============================================================
-   Egg Tools — Thermal Growth material list (data only)
+   Egg Tools - Thermal Growth material list (data only)
 
    Each entry is a quick-fill for the coefficient of thermal
    expansion, α, given as a mean value near room temperature in
-   µm/(m·°C)  — i.e. the number you'd write as value × 10⁻⁶ /°C.
+   µm/(m·°C)  - i.e. the number you'd write as value × 10⁻⁶ /°C.
 
    These are approximate; α is temperature-dependent, so for real
    design use the mean coefficient between installation and design
    temperature from the applicable code table.
 
-   To add a material, just add a { label, a } row below — no code
+   To add a material, just add a { label, a } row below - no code
    changes needed. Keep "Custom / manual entry" (a: null) first.
    ============================================================ */
 

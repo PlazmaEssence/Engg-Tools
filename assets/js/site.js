@@ -1,8 +1,8 @@
 /* ============================================================
-   Egg Tools — shared header/footer + tool grid renderer.
+   Egg Tools - shared header/footer + tool grid renderer.
    Every page includes this after tools-registry.js and sets:
-     window.EGG_BASE          — relative path back to site root
-     window.EGG_CURRENT_TOOL  — id of the tool this page is (or '' on home)
+     window.EGG_BASE          - relative path back to site root
+     window.EGG_CURRENT_TOOL  - id of the tool this page is (or '' on home)
    ============================================================ */
 
 (function () {
@@ -27,7 +27,7 @@
         <span class="logo-text">Egg <span>Tools</span></span>
       </a>
       <div class="sub">
-        <span>ASME B31.3 / B31.4 · Piping Engineering Tools</span>
+       <span>Piping Engineering Tools</span>
         <div class="nav-tools" id="nav-tools">
           <button class="nav-tools-btn" id="nav-tools-btn" type="button">
             Tools
