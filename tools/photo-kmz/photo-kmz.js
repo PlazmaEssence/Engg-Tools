@@ -3,7 +3,7 @@
    Turn a set of photos into a KMZ (a zip of doc.kml + the
    images) that opens in Google Earth with one pin per photo.
 
-   Everything runs in the browser — no uploads, no libraries.
+   Everything runs in the browser - no uploads, no libraries.
    The two "hard" pieces are hand-rolled and small:
      - a minimal EXIF reader (pulls GPS lat/lon + orientation)
      - a minimal ZIP writer (store method; KMZ is just a zip)
@@ -29,7 +29,7 @@
 
   // ---- EXIF: minimal GPS + orientation reader ----------------
   // Reads the APP1/Exif segment of a JPEG and returns
-  // { lat, lon, orientation } — any field may be undefined.
+  // { lat, lon, orientation } - any field may be undefined.
   function readExif(buffer) {
     const dv = new DataView(buffer);
     if (dv.byteLength < 4 || dv.getUint16(0) !== 0xffd8) return {}; // not a JPEG
@@ -39,7 +39,7 @@
     let tiff = -1;
     while (offset + 4 <= dv.byteLength) {
       if (dv.getUint16(offset) !== 0xffe1) {
-        // Not APP1 — skip this segment using its length field.
+        // Not APP1 - skip this segment using its length field.
         if (dv.getUint8(offset) !== 0xff) break;
         const len = dv.getUint16(offset + 2);
         if (len < 2) break;
@@ -181,8 +181,8 @@
   }
 
   // Build one photo's popup HTML: embedded (possibly downscaled)
-  // image, its caption, and — when an original-photos path was
-  // given — a link that opens the full original by path + filename.
+  // image, its caption, and - when an original-photos path was
+  // given - a link that opens the full original by path + filename.
   function entryHtml(e, group) {
     let h = '<img src="' + e.path + '" style="max-width:480px;width:100%;height:auto;" />';
     if (group) {
@@ -427,7 +427,7 @@
             photo.lon = exif.lon.toFixed(6);
             photo.fromExif = true;
           }
-        } catch (e) { /* ignore — user can enter coords */ }
+        } catch (e) { /* ignore - user can enter coords */ }
       }
       done++;
       if (track) { setProgress(done, files.length, start, 'Reading'); await nextFrame(); }
@@ -546,7 +546,7 @@
     }
 
     const g = grouping();
-    let msg = 'Ready — <strong>' + photos.length + '</strong> ' +
+    let msg = 'Ready - <strong>' + photos.length + '</strong> ' +
       (photos.length === 1 ? 'photo' : 'photos');
     if (g.on) {
       const located = photos.filter(hasCoords).map((p) => ({ lat: +p.lat, lon: +p.lon }));

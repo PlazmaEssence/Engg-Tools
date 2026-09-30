@@ -1,5 +1,5 @@
 /* ============================================================
-   Egg Tools — Unit Converter
+   Egg Tools - Unit Converter
    Linear categories store each unit's factor to a common base
    unit (value_in_base = value * factor). Temperature is handled
    separately since C/F/K/R need an offset, not just a factor.
@@ -7,7 +7,7 @@
    Compound categories (e.g. Flow Rate = volume per time) do not
    list every combination. Instead they reference two dimensions
    (a numerator and a denominator) and show one small dropdown for
-   each, so you can build any pairing — US gal/min, m3/h, bbl/day —
+   each, so you can build any pairing - US gal/min, m3/h, bbl/day -
    from two short lists instead of one long one.
    ============================================================ */
 
@@ -366,7 +366,7 @@ function ucConvert(value, fromSide, toSide, category) {
   }
 
   function trim(n) {
-    if (!isFinite(n)) return '—';
+    if (!isFinite(n)) return '-';
     if (Math.abs(n) >= 1e6 || (Math.abs(n) < 1e-4 && n !== 0)) return n.toExponential(4);
     return parseFloat(n.toPrecision(8)).toString();
   }

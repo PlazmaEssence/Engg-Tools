@@ -1,13 +1,13 @@
 # Egg Tools
 
-Small browser-based engineering tools for piping design work (ASME B31.3 / B31.4). Static site, no backend, no build step — hosted free on GitHub Pages.
+Small browser-based engineering tools for piping design work. Static site, no backend, no build step - hosted free on GitHub Pages.
 
 Live site: `https://<your-username>.github.io/Engg-Tools/` (enable in repo Settings → Pages → Deploy from branch → `main` / `/root`).
 
 ## Structure
 
 ```
-index.html                     home page — tool launcher grid
+index.html                     home page - tool launcher grid
 assets/
   css/theme.css                shared design system (colors, type, components)
   js/tools-registry.js         list of every tool (single source of truth)
@@ -33,7 +33,7 @@ Every page loads `tools-registry.js` then `site.js`, and sets two globals first:
 
 ## Adding a new tool
 
-1. Create `tools/<id>/index.html` (copy `tools/unit-converter/index.html` as a starting point — same `<head>`, header/footer placeholders, and script includes, with `EGG_BASE` set to `'../../'` and `EGG_CURRENT_TOOL` set to `'<id>'`).
+1. Create `tools/<id>/index.html` (copy `tools/unit-converter/index.html` as a starting point - same `<head>`, header/footer placeholders, and script includes, with `EGG_BASE` set to `'../../'` and `EGG_CURRENT_TOOL` set to `'<id>'`).
 2. Write the tool's own logic in `tools/<id>/<id>.js`.
 3. Add one entry to `assets/js/tools-registry.js`:
    ```js
@@ -48,13 +48,13 @@ Every page loads `tools-registry.js` then `site.js`, and sets two globals first:
    }
    ```
 
-That's it — the home page grid and every page's "Tools" nav dropdown pick it up automatically.
+That's it - the home page grid and every page's "Tools" nav dropdown pick it up automatically.
 A tool set to `status: 'hidden'` stays fully in the repo and reachable by its direct URL, it's
-just not advertised — useful while a tool is mid-rework and you don't want it discoverable yet.
+just not advertised - useful while a tool is mid-rework and you don't want it discoverable yet.
 
 ### Tools built elsewhere (Plot Log)
 
-`tools/plot-log/` isn't developed in this repo — it's the compiled output of
+`tools/plot-log/` isn't developed in this repo - it's the compiled output of
 [plot-log](https://github.com/PlazmaEssence/plot-log), a separate Vite/TypeScript project (its
 own build/tests/CI, since it needs a real bundler). To publish an update: in the `plot-log` repo,
 run `npm run build`, then copy `dist/index.html` and `dist/assets/*` over
@@ -72,7 +72,7 @@ GitHub Pages rebuilds automatically on every push to `main`, but browsers and th
 <script src="converter.js?v=2"></script>
 ```
 
-Changing the URL makes every cache layer treat it as a new file and refetch. **When you edit a shared file (`theme.css`, `tools-registry.js`, `site.js`), bump its `?v=` number in every page that includes it.** For a tool's own script, bump the `?v=` on just that page. Adding a new tool means editing `tools-registry.js`, so bump its version too — otherwise the new tool card/nav entry stays hidden behind a cached registry.
+Changing the URL makes every cache layer treat it as a new file and refetch. **When you edit a shared file (`theme.css`, `tools-registry.js`, `site.js`), bump its `?v=` number in every page that includes it.** For a tool's own script, bump the `?v=` on just that page. Adding a new tool means editing `tools-registry.js`, so bump its version too - otherwise the new tool card/nav entry stays hidden behind a cached registry.
 
 ## Local preview
 

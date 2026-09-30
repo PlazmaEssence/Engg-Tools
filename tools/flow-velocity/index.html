@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pipe Flow &amp; Velocity · Egg Tools</title>
-<meta name="description" content="Flow rate and velocity in a pipe — pick HDPE or carbon steel, NPS size and schedule/DR, autofill OD, wall and ID, enter a flow rate with compound units, and download a live-formula Excel sheet.">
+<meta name="description" content="Flow rate and velocity in a pipe - pick HDPE or carbon steel, NPS size and schedule/DR, autofill OD, wall and ID, enter a flow rate with compound units, and download a live-formula Excel sheet.">
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/theme.css?v=1">
+<link rel="stylesheet" href="../../assets/css/theme.css?v=2">
 <style>
   .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
 
@@ -73,12 +73,12 @@
 
   <div class="intro">
     <h1>Pipe Flow &amp; Velocity</h1>
-    <p>Pick a pipe, size and rating to autofill OD, wall thickness and inner diameter, then enter a flow rate to get the velocity — or a velocity to get the required flow. Everything runs in your browser.</p>
+    <p>Pick a pipe, size and rating to autofill OD, wall thickness and inner diameter, then enter a flow rate to get the velocity - or a velocity to get the required flow. Everything runs in your browser.</p>
   </div>
 
   <div class="notice notice-info">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <div>Engineering aid only. Carbon-steel dimensions follow ASME B36.10M and HDPE uses IPS ODs with wall = OD ÷ DR — always verify size, schedule/DR and wall against the current standard and your project spec. OD, wall and ID stay editable; edit ID and the wall recomputes, edit wall and the ID recomputes.</div>
+    <div>Engineering aid only. Carbon-steel dimensions follow ASME B36.10M and HDPE uses IPS ODs with wall = OD ÷ DR - always verify size, schedule/DR and wall against the current standard and your project spec. OD, wall and ID stay editable; edit ID and the wall recomputes, edit wall and the ID recomputes.</div>
   </div>
 
   <!-- category -->
@@ -142,19 +142,19 @@
 
   <div class="build-bar">
     <button class="btn btn-gold" id="download-btn">Download Excel</button>
-    <span class="hint">Live-formula .xlsx (v = Q ÷ (π/4·ID²)) with unit factors — recalculates when you change an input. No pipe lookup.</span>
+    <span class="hint">Live-formula .xlsx (v = Q ÷ (π/4·ID²)) with unit factors - recalculates when you change an input. No pipe lookup.</span>
   </div>
 </main>
 
 <footer class="site-footer" id="site-footer"></footer>
 
-<script src="../../assets/js/tools-registry.js?v=5"></script>
+<script src="../../assets/js/tools-registry.js?v=6"></script>
 <script>
   window.EGG_BASE = '../../';
   window.EGG_CURRENT_TOOL = 'flow-velocity';
 </script>
-<script src="../../assets/js/site.js?v=2"></script>
-<script src="../../assets/js/pipe-data.js?v=2"></script>
-<script src="flow-velocity.js?v=1"></script>
+<script src="../../assets/js/site.js?v=3"></script>
+<script src="../../assets/js/pipe-data.js?v=3"></script>
+<script src="flow-velocity.js?v=2"></script>
 </body>
 </html>
