@@ -44,6 +44,9 @@
     word-break: break-word;
   }
 
+  .bt-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 760px) { .bt-grid { grid-template-columns: minmax(0, 1fr); } }
+  input.calc { color: var(--gold); border-style: dashed; }
   .adv-toggle { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; font-size: 14px; cursor: pointer; }
   .adv-toggle input { width: auto; }
   .adv-only[hidden] { display: none !important; }
@@ -58,7 +61,7 @@
 
   <div class="intro">
     <h1>Bolt Torque</h1>
-    <p>Tightening torque for a bolted joint using the short-form torque equation. Enter the total clamping load and the nut factor, or solve the other way around. Tick the option below to also enter the clamped ID and OD and get the clamping stress.</p>
+    <p>Tightening torque for a bolted joint using the short-form torque equation. Fill in either the total clamping load or the torque per bolt and the other one is calculated for you. Tick the option below to also enter the clamped ID and OD and get the clamping stress.</p>
   </div>
 
   <div class="notice notice-info">
@@ -78,15 +81,7 @@
 
   <div class="input-panel" style="margin-bottom:1.5rem;">
     <div class="panel-header"><label>Inputs</label></div>
-    <div class="field-grid">
-      <div class="field">
-        <label>Solve for</label>
-        <select id="f-mode">
-          <option value="torque">Torque (from clamping load)</option>
-          <option value="load">Clamping load (from torque)</option>
-        </select>
-      </div>
-
+    <div class="field-grid bt-grid">
       <div class="field">
         <label>Number of bolts, N</label>
         <input type="number" step="1" min="1" id="f-N" value="1">
@@ -106,15 +101,15 @@
       </div>
 
       <div class="field" id="fld-load">
-        <label>Total clamping load, F<sub>total</sub></label>
+        <label>Total clamping load, F<sub>total</sub> <span class="calc-tag" id="tag-F"></span></label>
         <div class="input-with-unit">
           <input type="number" step="any" id="f-F" value="100">
           <select id="u-F"></select>
         </div>
       </div>
 
-      <div class="field" id="fld-torque" hidden>
-        <label>Torque per bolt, T</label>
+      <div class="field" id="fld-torque">
+        <label>Torque per bolt, T <span class="calc-tag" id="tag-T"></span></label>
         <div class="input-with-unit">
           <input type="number" step="any" id="f-T" value="100">
           <select id="u-T"></select>
@@ -124,7 +119,7 @@
 
     <label class="adv-toggle"><input type="checkbox" id="f-adv"> Include clamped area (ID / OD) to calculate clamping stress</label>
 
-    <div class="field-grid adv-only" id="adv-fields" hidden>
+    <div class="field-grid bt-grid adv-only" id="adv-fields" hidden>
       <div class="field">
         <label>Clamped area inner diameter, ID</label>
         <div class="input-with-unit">
@@ -148,14 +143,14 @@
 
   <div class="stat-row">
     <div class="stat stat-gold">
-      <div class="stat-top"><div class="stat-icon" id="out1-icon">T</div></div>
+      <div class="stat-top"><div class="stat-icon">T</div></div>
       <div class="stat-num" id="out1">–</div>
       <div class="stat-lbl" id="out1-lbl">torque per bolt</div>
     </div>
     <div class="stat stat-s">
-      <div class="stat-top"><div class="stat-icon" id="out2-icon">F</div></div>
+      <div class="stat-top"><div class="stat-icon">F</div></div>
       <div class="stat-num" id="out2">–</div>
-      <div class="stat-lbl" id="out2-lbl">load per bolt</div>
+      <div class="stat-lbl" id="out2-lbl">clamping load per bolt</div>
     </div>
     <div class="stat stat-a adv-only" id="stat-stress" hidden>
       <div class="stat-top"><div class="stat-icon">σ</div></div>
@@ -176,6 +171,6 @@
   window.EGG_CURRENT_TOOL = 'bolt-torque';
 </script>
 <script src="../../assets/js/site.js?v=3"></script>
-<script src="bolt-torque.js?v=1"></script>
+<script src="bolt-torque.js?v=3"></script>
 </body>
 </html>

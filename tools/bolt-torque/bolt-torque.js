@@ -45,7 +45,7 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
 
 (function initBoltTorque() {
   const el = id => document.getElementById(id);
-  const modeEl = el('f-mode'), NEl = el('f-N'), KEl = el('f-K');
+  const NEl = el('f-N'), KEl = el('f-K');
   const DEl = el('f-D'), uDEl = el('u-D');
   const FEl = el('f-F'), uFEl = el('u-F');
   const TEl = el('f-T'), uTEl = el('u-T');
@@ -100,43 +100,56 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
     window.addEventListener('load', renderEquations);
   }
 
+  // Whichever of load / torque the user typed last drives the other.
+  let driver = 'F';
+
+  function setCalc(inputEl, tagEl, value) {
+    inputEl.value = isFinite(value) ? trim(value) : '';
+    inputEl.classList.add('calc');
+    tagEl.textContent = '(calculated)';
+  }
+  function clearCalc(inputEl, tagEl) {
+    inputEl.classList.remove('calc');
+    tagEl.textContent = '';
+  }
+
   function compute() {
-    const solveTorque = modeEl.value === 'torque';
     const adv = advEl.checked;
-    el('fld-load').hidden = !solveTorque;
-    el('fld-torque').hidden = solveTorque;
     advFields.hidden = !adv;
     el('stat-stress').hidden = !adv;
     el('eq-adv').hidden = !adv;
 
     const N = val(NEl), K = val(KEl);
     const D = val(DEl) * BT_LEN[cur.D].f;
-    let Ftot, Tb;
-    if (solveTorque) {
-      Ftot = val(FEl) * BT_FORCE[cur.F].f;
-      Tb = K * D * (Ftot / N);
+    const fU = BT_FORCE[cur.F], tU = BT_TORQUE[cur.T];
+    const params = [N, K, D].every(isFinite) && N >= 1 && K > 0 && D > 0;
+
+    // if the driving field was emptied, fall back to the other one
+    if (driver === 'F' && !isFinite(val(FEl)) && isFinite(val(TEl)) && !TEl.classList.contains('calc')) driver = 'T';
+    if (driver === 'T' && !isFinite(val(TEl)) && isFinite(val(FEl)) && !FEl.classList.contains('calc')) driver = 'F';
+
+    let Ftot = NaN, Tb = NaN;
+    if (driver === 'F') {
+      clearCalc(FEl, el('tag-F'));
+      Ftot = val(FEl) * fU.f;
+      Tb = params ? K * D * (Ftot / N) : NaN;
+      setCalc(TEl, el('tag-T'), Tb / tU.f);
     } else {
-      Tb = val(TEl) * BT_TORQUE[cur.T].f;
-      Ftot = Tb * N / (K * D);
+      clearCalc(TEl, el('tag-T'));
+      Tb = val(TEl) * tU.f;
+      Ftot = params ? Tb * N / (K * D) : NaN;
+      setCalc(FEl, el('tag-F'), Ftot / fU.f);
+    }
+    if (!params || !isFinite(Ftot) || !isFinite(Tb)) {
+      // nothing sensible to show for the calculated field
+      const calcEl = driver === 'F' ? TEl : FEl;
+      calcEl.value = '';
     }
     const Fb = Ftot / N;
+    const ok = params && isFinite(Ftot) && isFinite(Tb);
 
-    const ok = [N, K, D, Ftot, Tb].every(isFinite) && N >= 1 && K > 0 && D > 0;
-    const tU = BT_TORQUE[cur.T], fU = BT_FORCE[cur.F];
-
-    el('out1-icon').textContent = solveTorque ? 'T' : 'F';
-    el('out2-icon').textContent = solveTorque ? 'F' : 'T';
-    if (solveTorque) {
-      el('out1').textContent = ok ? `${trim(Tb / tU.f)} ${tU.label}` : '–';
-      el('out1-lbl').textContent = 'torque per bolt';
-      el('out2').textContent = ok ? `${trim(Fb / fU.f)} ${fU.label}` : '–';
-      el('out2-lbl').textContent = 'clamping load per bolt';
-    } else {
-      el('out1').textContent = ok ? `${trim(Ftot / fU.f)} ${fU.label}` : '–';
-      el('out1-lbl').textContent = 'total clamping load';
-      el('out2').textContent = ok ? `${trim(Fb / fU.f)} ${fU.label}` : '–';
-      el('out2-lbl').textContent = 'clamping load per bolt';
-    }
+    el('out1').textContent = ok ? `${trim(Tb / tU.f)} ${tU.label}` : '–';
+    el('out2').textContent = ok ? `${trim(Fb / fU.f)} ${fU.label}` : '–';
 
     let stressLine = '';
     if (adv) {
@@ -157,12 +170,12 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
     }
 
     if (!ok) {
-      el('formula-box').textContent = 'Enter valid inputs (N ≥ 1, K > 0, D > 0) to see the calculation.';
+      el('formula-box').textContent = 'Enter N ≥ 1, K > 0, D > 0 and either the clamping load or the torque to see the calculation.';
       return;
     }
     el('formula-box').textContent =
       `D       = ${trim(val(DEl))} ${BT_LEN[cur.D].label} = ${trim(D)} m\n` +
-      (solveTorque
+      (driver === 'F'
         ? `F_total = ${trim(Ftot)} N,  F_bolt = F_total / N = ${trim(Ftot)} / ${trim(N)} = ${trim(Fb)} N\n` +
           `T       = K · D · F_bolt = ${trim(K)} × ${trim(D)} × ${trim(Fb)} = ${trim(Tb)} N·m`
         : `T       = ${trim(Tb)} N·m\n` +
@@ -175,7 +188,7 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
   function bindUnit(selEl, inputEl, table, key) {
     selEl.addEventListener('change', () => {
       const v = val(inputEl);
-      if (isFinite(v)) inputEl.value = trim(v * table[cur[key]].f / table[selEl.value].f);
+      if (isFinite(v) && !inputEl.classList.contains('calc')) inputEl.value = trim(v * table[cur[key]].f / table[selEl.value].f);
       cur[key] = selEl.value;
       compute();
     });
@@ -187,8 +200,9 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
   bindUnit(uTEl, TEl, BT_TORQUE, 'T');
   uSEl.addEventListener('change', compute);
 
-  [NEl, KEl, DEl, FEl, TEl, IDEl, ODEl].forEach(n => n.addEventListener('input', compute));
-  modeEl.addEventListener('change', compute);
+  [NEl, KEl, DEl, IDEl, ODEl].forEach(n => n.addEventListener('input', compute));
+  FEl.addEventListener('input', () => { if (isFinite(val(FEl))) driver = 'F'; compute(); });
+  TEl.addEventListener('input', () => { if (isFinite(val(TEl))) driver = 'T'; compute(); });
   advEl.addEventListener('change', compute);
 
   compute();
