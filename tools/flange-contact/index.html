@@ -33,6 +33,7 @@
   svg .part { stroke: var(--muted); stroke-width: 1.2; stroke-linejoin: round; }
   svg .part.steel { fill: #2a2e3a; }
   svg .part.hdpe  { fill: #3b3524; stroke: var(--gold-dim); }
+  svg .part.gasket { fill: rgba(138,136,128,0.55); stroke: var(--text); }
   svg .part.weld  { fill: var(--muted); stroke: none; }
   svg .hl { stroke-width: 4; stroke-linecap: butt; }
   svg .hl-c { stroke: var(--green); stroke-width: 5; }
@@ -78,7 +79,7 @@
 
   <div class="notice notice-info">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <div>Rough sketch tool. Flange sizes are approximate ASME B16.5 Class 150 values and the HDPE adapter and stub end dimensions are placeholders that vary by manufacturer, so overwrite them with your drawing or vendor data. Gaskets, raised-face height, bolt holes and fillet radii are ignored: this compares bare face to face.</div>
+    <div>Rough sketch tool. Flange sizes are approximate ASME B16.5 Class 150 values and the HDPE adapter and stub end dimensions are placeholders that vary by manufacturer, so overwrite them with your drawing or vendor data. Raised-face height, bolt holes and fillet radii are ignored: this compares faces only (add a gasket in the Joint panel if you want one between them).</div>
   </div>
 
   <div class="input-panel" style="margin-bottom:1.5rem;">
@@ -116,6 +117,23 @@
     <div class="side-sep"></div>
     <div class="side-title" id="side-B-title"></div>
     <div class="field-grid param-grid" id="params-B"></div>
+    <div class="side-sep"></div>
+    <div class="side-title">Gasket between the faces</div>
+    <div class="field-grid ctl-grid">
+      <div class="field">
+        <label>Gasket</label>
+        <label style="display:flex;gap:8px;align-items:center;font-weight:500;font-size:13px;color:var(--text);"><input type="checkbox" id="f-gasket" style="width:auto;"> Include a gasket</label>
+      </div>
+    </div>
+    <div id="gasket-fields" style="display:none;">
+      <div class="field-grid param-grid" style="padding-top:0;">
+        <div class="field"><label>Gasket type</label>
+          <select id="f-gtype"><option value="ring">Ring (to raised face OD)</option><option value="full">Full face (to flange OD)</option></select></div>
+        <div class="field"><label>Gasket ID</label><div class="input-with-unit"><input type="number" step="any" min="0" id="g-id"><span class="u-len unit-tag"></span></div></div>
+        <div class="field"><label>Gasket OD</label><div class="input-with-unit"><input type="number" step="any" min="0" id="g-od"><span class="u-len unit-tag"></span></div></div>
+        <div class="field"><label>Gasket thickness</label><div class="input-with-unit"><input type="number" step="any" min="0" id="g-t"><span class="u-len unit-tag"></span></div></div>
+      </div>
+    </div>
     <div style="padding:0 18px 16px;"><button class="btn btn-ghost" id="btn-reset" type="button">Reset dimensions to defaults</button></div>
   </div>
 
@@ -183,6 +201,6 @@
 </script>
 <script src="../../assets/js/site.js?v=3"></script>
 <script src="../../assets/js/pipe-data.js?v=3"></script>
-<script src="flange-contact.js?v=2"></script>
+<script src="flange-contact.js?v=3"></script>
 </body>
 </html>

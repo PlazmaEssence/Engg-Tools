@@ -150,7 +150,8 @@ const FC_JOINTS = [
 ];
 
 /* ── State ───────────────────────────────────────────────── */
-const fcState = { joint: 'hdpe-slipon', nps: '4', sched: 'STD', dr: 11, unit: 'in', iface: 'seal', A: {}, B: {} };
+const fcState = { joint: 'hdpe-slipon', nps: '4', sched: 'STD', dr: 11, unit: 'in', iface: 'seal', A: {}, B: {},
+  gasket: { on: false, type: 'ring', id: 0, od: 0, t: 0.125 } };
 
 const $ = id => document.getElementById(id);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -176,6 +177,15 @@ function fcLoadDefaults() {
     const c = fcComp(side);
     fcState[side] = c.defaults(fcPipe(c.steel), fl);
   }
+  fcGasketDefaults();
+}
+
+/* Ring gasket: steel pipe ID out to the raised face. Full face: out to the flange OD. */
+function fcGasketDefaults() {
+  const fl = FC_FLANGE[fcState.nps], g = fcState.gasket;
+  g.id = fcPipe(true).id;
+  g.od = g.type === 'full' ? fl.fo : fl.rf;
+  g.t = 0.125;
 }
 
 /* ── Unit helpers ────────────────────────────────────────── */
@@ -198,7 +208,9 @@ const fcAnnulus = (id, od) => (od > id ? Math.PI / 4 * (od * od - id * id) : 0);
 
 /* ── Interface selection ─────────────────────────────────── */
 function fcInterfaces() {
-  const list = [{ id: 'seal', label: 'Sealing faces (A face to B face)' }];
+  const list = fcState.gasket.on
+    ? [{ id: 'gA', label: 'Side A face to gasket' }, { id: 'gB', label: 'Gasket to side B face' }]
+    : [{ id: 'seal', label: 'Sealing faces (A face to B face)' }];
   for (const side of ['A', 'B']) {
     const c = fcComp(side);
     if (c.bearing) {
@@ -211,17 +223,18 @@ function fcInterfaces() {
 
 function fcActiveInterface() {
   const list = fcInterfaces();
-  if (!list.some(i => i.id === fcState.iface)) fcState.iface = 'seal';
+  if (!list.some(i => i.id === fcState.iface)) fcState.iface = list[0].id;
   const id = fcState.iface;
-  if (id === 'seal') {
-    const s1 = fcComp('A').face(fcState.A), s2 = fcComp('B').face(fcState.B);
-    s1.name = 'A: ' + s1.name; s2.name = 'B: ' + s2.name;
-    return { id, s1, s2, x: 0, dir1: -1, side: null };
-  }
+  const fA = () => { const f = fcComp('A').face(fcState.A); f.name = 'A: ' + f.name; return f; };
+  const fB = () => { const f = fcComp('B').face(fcState.B); f.name = 'B: ' + f.name; return f; };
+  const gk = () => ({ name: 'Gasket', id: fcState.gasket.id, od: fcState.gasket.od });
+  if (id === 'seal') return { id, s1: fA(), s2: fB(), x: 0, gs: 0, dir1: -1, side: null };
+  if (id === 'gA') return { id, s1: fA(), s2: gk(), x: 0, gs: 0, dir1: -1, side: null };
+  if (id === 'gB') return { id, s1: gk(), s2: fB(), x: 0, gs: 1, dir1: -1, side: null };
   const side = id.slice(-1);
   const b = fcComp(side).bearing(fcState[side]);
   const sign = side === 'A' ? -1 : 1;           // which way the side runs from the face
-  return { id, s1: b.s1, s2: b.s2, x: sign * b.x, dir1: sign, side };
+  return { id, s1: b.s1, s2: b.s2, x: sign * b.x, gs: side === 'B' && fcState.gasket.on ? 1 : 0, dir1: sign, side };
 }
 
 function fcContact(s1, s2) {
@@ -329,19 +342,22 @@ function drawSection(I, C) {
   svgDefs(svg, 's');
 
   const pipeLen = 0.45 * Math.max(fcState.A.pipeOD, fcState.B.pipeOD);
-  const build = h => {
+  const gk = fcState.gasket;
+  const build = (h, tg) => {
     const d = { L: pipeLen, h };
-    return [fcComp('A').draw(fcState.A, d), mirror(fcComp('B').draw(fcState.B, d))];
+    const b = mirror(fcComp('B').draw(fcState.B, d)).map(p => ({ cls: p.cls, pts: p.pts.map(([x, r]) => [x + tg, r]) }));
+    return [fcComp('A').draw(fcState.A, d), b];
   };
-  let [pa, pb] = build(0);
+  let [pa, pb] = build(0, gk.on ? gk.t : 0);
   const ba = bbox(pa), bb = bbox(pb);
   const extL = -ba.x0, extR = bb.x1;
   const rmax = Math.max(ba.r1, bb.r1);
   // the bore is empty space, so crop the radial axis just under the pipe ID
   const rmin = 0.85 * Math.min(ba.r0, bb.r0);
   const s = Math.min((W - 2 * m) / (extL + extR), (base - m) / (rmax - rmin));
-  [pa, pb] = build(Math.max(0.0625, 3 / s));          // raised face never thinner than ~3px
-  const ox = m + ((W - 2 * m) - (extL + extR) * s) / 2 + extL * s;
+  const tg = gk.on ? Math.max(gk.t, 4 / s) : 0;        // gasket never thinner than ~4px
+  [pa, pb] = build(Math.max(0.0625, 3 / s), tg);       // raised face never thinner than ~3px
+  const ox = m + ((W - 2 * m) - (extL + extR + tg - (gk.on ? gk.t : 0)) * s) / 2 + extL * s;
   const X = x => ox + x * s, Y = r => base - (r - rmin) * s;
 
   el('line', { x1: m / 2, y1: base + 6, x2: W - m / 2, y2: base + 6, class: 'cl' }, svg);
@@ -350,17 +366,22 @@ function drawSection(I, C) {
   [...pa, ...pb].forEach(p =>
     el('polygon', { points: p.pts.map(([x, r]) => `${X(x)},${Y(r)}`).join(' '), class: 'part ' + p.cls }, svg));
 
+  if (gk.on) {
+    el('polygon', { points: [[0, gk.id / 2], [0, gk.od / 2], [tg, gk.od / 2], [tg, gk.id / 2]].map(([x, r]) => `${X(x)},${Y(r)}`).join(' '), class: 'part gasket' }, svg);
+  }
+
   // interface highlight
+  const xi = I.x + I.gs * tg;
   const off = 3.5;
   const seg = (x, r0, r1, dir, cls) =>
     el('line', { x1: X(x) + dir * off, y1: Y(r0 / 2), x2: X(x) + dir * off, y2: Y(r1 / 2), class: 'hl ' + cls }, svg);
-  fcOnly(I.s1, C).forEach(([a, b]) => seg(I.x, a, b, I.dir1, 'hl-a'));
-  fcOnly(I.s2, C).forEach(([a, b]) => seg(I.x, a, b, -I.dir1, 'hl-b'));
+  fcOnly(I.s1, C).forEach(([a, b]) => seg(xi, a, b, I.dir1, 'hl-a'));
+  fcOnly(I.s2, C).forEach(([a, b]) => seg(xi, a, b, -I.dir1, 'hl-b'));
   if (C.ok) {
-    el('line', { x1: X(I.x), y1: Y(C.id / 2), x2: X(I.x), y2: Y(C.od / 2), class: 'hl hl-c' }, svg);
+    el('line', { x1: X(xi), y1: Y(C.id / 2), x2: X(xi), y2: Y(C.od / 2), class: 'hl hl-c' }, svg);
     const u = FC_LEN[fcState.unit].label;
-    const ax = I.id === 'seal' ? X(I.x) + 10 : (I.side === 'A' ? X(I.x) + 10 : X(I.x) - 10);
-    const an = I.id === 'seal' ? 'start' : (I.side === 'A' ? 'start' : 'end');
+    const ax = !I.side || I.side === 'A' ? X(xi) + 10 : X(xi) - 10;
+    const an = !I.side || I.side === 'A' ? 'start' : 'end';
     label(svg, ax, Y(C.od / 2) - 5, 'OD ' + fcLen(C.od) + ' ' + u, { anchor: an, cls: 'dim-od' });
     label(svg, ax, Y(C.id / 2) + 14, 'ID ' + fcLen(C.id) + ' ' + u, { anchor: an, cls: 'dim-id' });
   }
@@ -382,6 +403,8 @@ function fcWarnings() {
     if (f.od <= f.id) w.push(`Side ${side}: sealing face OD is not larger than its ID.`);
     if (p.fo != null && p.fo < f.od) w.push(`Side ${side}: flange OD is smaller than the sealing face OD.`);
   }
+  const g = fcState.gasket;
+  if (g.on && g.od <= g.id) w.push('Gasket OD is not larger than its ID.');
   return w;
 }
 
@@ -467,6 +490,13 @@ function buildParams() {
   }
 }
 
+function syncGasketInputs() {
+  const g = fcState.gasket;
+  $('f-gasket').checked = g.on;
+  $('f-gtype').value = g.type;
+  ['id', 'od', 't'].forEach(k => { $('g-' + k).value = +fcToDisp(g[k]).toFixed(4); });
+}
+
 function syncParamInputs() {
   for (const side of ['A', 'B']) {
     fcComp(side).params.forEach(pr => {
@@ -485,6 +515,7 @@ function toggleConditional() {
   const j = fcJoint();
   const steel = [j.a, j.b].some(k => FC_COMP[k].steel);
   const hdpe = [j.a, j.b].some(k => !FC_COMP[k].steel);
+  $('gasket-fields').style.display = fcState.gasket.on ? '' : 'none';
   $('fld-sched').style.display = steel ? '' : 'none';
   $('fld-dr').style.display = hdpe ? '' : 'none';
 }
@@ -495,6 +526,7 @@ function resetAll() {
   buildParams();
   toggleConditional();
   syncParamInputs();
+  syncGasketInputs();
   render();
 }
 
@@ -510,7 +542,15 @@ function init() {
   $('f-sched').addEventListener('change', e => { fcState.sched = e.target.value; resetAll(); });
   $('f-dr').addEventListener('change', e => { fcState.dr = parseFloat(e.target.value); resetAll(); });
   $('f-iface').addEventListener('change', e => { fcState.iface = e.target.value; render(); });
-  $('f-unit').addEventListener('change', e => { fcState.unit = e.target.value; syncParamInputs(); render(); });
+  $('f-unit').addEventListener('change', e => { fcState.unit = e.target.value; syncParamInputs(); syncGasketInputs(); render(); });
+  $('f-gasket').addEventListener('change', e => { fcState.gasket.on = e.target.checked; buildInterfaces(); toggleConditional(); render(); });
+  $('f-gtype').addEventListener('change', e => { fcState.gasket.type = e.target.value; fcGasketDefaults(); syncGasketInputs(); render(); });
+  ['id', 'od', 't'].forEach(k => $('g-' + k).addEventListener('input', e => {
+    const v = parseFloat(e.target.value);
+    if (!(v > 0)) return;
+    fcState.gasket[k] = fcFromDisp(v);
+    render();
+  }));
   $('btn-reset').addEventListener('click', resetAll);
 
   resetAll();
