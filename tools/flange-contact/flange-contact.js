@@ -64,6 +64,11 @@ const FC_COMP = {
     defaults: (pipe, fl) => ({ pipeOD: pipe.od, pipeID: pipe.id, bore: fl.bore, rf: fl.rf, fo: fl.fo, t: fl.t }),
     face: p => ({ name: 'Slip-on raised face', id: p.bore, od: p.rf, idK: 'bore', odK: 'rf' }),
     bearing: null,
+    anchors: (p, d) => ({
+      pipeOD: [-p.t - d.L * 0.5, p.pipeOD / 2], pipeID: [-p.t - d.L * 0.5, p.pipeID / 2],
+      bore: [-p.t * 0.5, p.bore / 2], rf: [-d.h / 2, p.rf / 2], fo: [-p.t * 0.5, p.fo / 2],
+      t: [-p.t, (p.bore + p.fo) / 4]
+    }),
     draw(p, d) {
       const B = p.bore / 2, G = p.rf / 2, F = p.fo / 2, ro = p.pipeOD / 2, ri = p.pipeID / 2;
       const T = p.t, L = d.L, h = d.h;
@@ -97,6 +102,11 @@ const FC_COMP = {
       s1: { name: 'Loose flange face', id: p.bore, od: p.fo, idK: 'bore', odK: 'fo' },
       s2: { name: 'Stub end lap back', id: p.pipeOD, od: p.lap, idK: 'pipeOD', odK: 'lap' }
     }),
+    anchors: (p, d) => ({
+      pipeOD: [-p.tl - p.t - d.L * 0.5, p.pipeOD / 2], pipeID: [-p.tl - p.t - d.L * 0.5, p.pipeID / 2],
+      lap: [-p.tl * 0.5, p.lap / 2], tl: [-p.tl, (p.pipeOD + p.lap) / 4],
+      bore: [-p.tl - p.t * 0.5, p.bore / 2], fo: [-p.tl - p.t * 0.5, p.fo / 2], t: [-p.tl - p.t, (p.bore + p.fo) / 4]
+    }),
     draw(p, d) {
       const G = p.lap / 2, ro = p.pipeOD / 2, ri = p.pipeID / 2, B = p.bore / 2, F = p.fo / 2;
       const tl = p.tl, T = p.t, L = d.L;
@@ -129,6 +139,11 @@ const FC_COMP = {
       x: p.tc,
       s1: { name: 'Backing ring face', id: p.rbore, od: p.fo, idK: 'rbore', odK: 'fo' },
       s2: { name: 'Adapter collar back', id: p.pipeOD, od: p.face, idK: 'pipeOD', odK: 'face' }
+    }),
+    anchors: (p, d) => ({
+      pipeOD: [-p.tc - p.t - d.L * 0.5, p.pipeOD / 2], pipeID: [-p.tc - p.t - d.L * 0.5, p.pipeID / 2],
+      face: [-p.tc * 0.5, p.face / 2], tc: [-p.tc, (p.pipeOD + p.face) / 4],
+      rbore: [-p.tc - p.t * 0.5, p.rbore / 2], fo: [-p.tc - p.t * 0.5, p.fo / 2], t: [-p.tc - p.t, (p.rbore + p.fo) / 4]
     }),
     draw(p, d) {
       const G = p.face / 2, ro = p.pipeOD / 2, ri = p.pipeID / 2, R = p.rbore / 2, F = p.fo / 2;
@@ -309,7 +324,7 @@ function fcEditLabel(textEl, ed) {
   inp.type = 'number'; inp.step = 'any'; inp.min = '0';
   inp.value = +fcToDisp(ed.value).toFixed(4);
   const cap = document.createElement('div');
-  cap.textContent = `${ed.which.toUpperCase()} of ${ed.surface.name} (${FC_LEN[fcState.unit].label})`;
+  cap.textContent = `${ed.name} (${FC_LEN[fcState.unit].label})`;
   wrap.append(inp, cap);
   host.appendChild(wrap);
   inp.focus(); inp.select();
@@ -320,8 +335,8 @@ function fcEditLabel(textEl, ed) {
     const v = parseFloat(inp.value);
     wrap.remove();
     if (!ok || !(v > 0)) return;
-    const target = ed.surface.obj === 'gasket' ? fcState.gasket : fcState[ed.surface.obj];
-    target[ed.which === 'id' ? ed.surface.idK : ed.surface.odK] = fcFromDisp(v);
+    const target = ed.obj === 'gasket' ? fcState.gasket : fcState[ed.obj];
+    target[ed.key] = fcFromDisp(v);
     syncParamInputs(); syncGasketInputs();
     render();
   };
@@ -332,10 +347,23 @@ function fcEditLabel(textEl, ed) {
   inp.addEventListener('blur', () => finish(true));
 }
 
+/* A dimension tag: muted name + value, clickable to edit. */
+function dimTag(svg, x, y, name, value, anchor, ed) {
+  const t = el('text', { x, y, class: 'dl editable', 'text-anchor': anchor }, svg);
+  el('tspan', { class: 'nm' }, t, name + '  ');
+  el('tspan', { class: 'vl' }, t, fcLen(value));
+  el('title', {}, t, 'Click to edit');
+  t.addEventListener('click', () => fcEditLabel(t, ed));
+}
+
 /* Which surface sets the contact ID / OD, and its current value. */
 function fcEdit(I, C, which) {
   const surface = (which === 'id' ? C.idBy : C.odBy) === 1 ? I.s1 : I.s2;
-  return { which, surface, value: which === 'id' ? C.id : C.od };
+  return {
+    obj: surface.obj, key: which === 'id' ? surface.idK : surface.odK,
+    value: which === 'id' ? C.id : C.od,
+    name: `${which.toUpperCase()} of ${surface.name}`
+  };
 }
 
 /* ── Plan view (looking along the bolt axis) ─────────────── */
@@ -387,7 +415,8 @@ const mirror = polys => polys.map(p => ({ cls: p.cls, pts: p.pts.map(([x, r]) =>
 function drawSection(I, C) {
   const svg = $('sec-svg');
   svg.innerHTML = '';
-  const W = 780, H = 400, m = 28, base = H - 46;     // base = y of the centreline
+  const W = 1040, H = 440, m = 20, COLW = 215, base = H - 46;   // base = y of the radial-axis crop line
+  const GW = W - 2 * m - 2 * COLW;                     // width left for the drawing itself
   svgDefs(svg, 's');
 
   const pipeLen = 0.45 * Math.max(fcState.A.pipeOD, fcState.B.pipeOD);
@@ -403,14 +432,14 @@ function drawSection(I, C) {
   const rmax = Math.max(ba.r1, bb.r1);
   // the bore is empty space, so crop the radial axis just under the pipe ID
   const rmin = 0.85 * Math.min(ba.r0, bb.r0);
-  const s = Math.min((W - 2 * m) / (extL + extR), (base - m) / (rmax - rmin));
+  const s = Math.min(GW / (extL + extR), (base - 28) / (rmax - rmin));
   const tg = gk.on ? Math.max(gk.t, 4 / s) : 0;        // gasket never thinner than ~4px
   [pa, pb] = build(Math.max(0.0625, 3 / s), tg);       // raised face never thinner than ~3px
-  const ox = m + ((W - 2 * m) - (extL + extR + tg - (gk.on ? gk.t : 0)) * s) / 2 + extL * s;
+  const ox = m + COLW + (GW - (extL + extR + tg - (gk.on ? gk.t : 0)) * s) / 2 + extL * s;
   const X = x => ox + x * s, Y = r => base - (r - rmin) * s;
 
-  el('line', { x1: m / 2, y1: base + 6, x2: W - m / 2, y2: base + 6, class: 'cl' }, svg);
-  label(svg, W - m / 2, base + 20, 'radial axis cropped: this line is ' + fcLen(rmin) + ' ' + FC_LEN[fcState.unit].label + ' from the pipe centreline', { anchor: 'end', cls: 'faint' });
+  el('line', { x1: m, y1: base + 6, x2: W - m, y2: base + 6, class: 'cl' }, svg);
+  label(svg, W - m, base + 20, 'radial axis cropped: this line is ' + fcLen(rmin) + ' ' + FC_LEN[fcState.unit].label + ' from the pipe centreline', { anchor: 'end', cls: 'faint' });
 
   [...pa, ...pb].forEach(p =>
     el('polygon', { points: p.pts.map(([x, r]) => `${X(x)},${Y(r)}`).join(' '), class: 'part ' + p.cls }, svg));
@@ -435,9 +464,42 @@ function drawSection(I, C) {
     label(svg, ax, Y(C.id / 2) + 14, 'ID ' + fcLen(C.id) + ' ' + u, { anchor: an, cls: 'dim-id', edit: fcEdit(I, C, 'id') });
   }
 
+  // every dimension, tagged in a column either side with a leader to its feature
+  const dd = { L: pipeLen, h: Math.max(0.0625, 3 / s) };
+  const tagsA = [], tagsB = [];
+  const addTags = (side, list) => {
+    const comp = fcComp(side), an = comp.anchors(fcState[side], dd);
+    comp.params.forEach(pr => {
+      let [x, r] = an[pr.k];
+      if (side === 'B') x = -x + tg;
+      list.push({ x: X(x), y: Y(r), name: pr.label, value: fcState[side][pr.k],
+        ed: { obj: side, key: pr.k, value: fcState[side][pr.k], name: `Side ${side}: ${pr.label}` } });
+    });
+  };
+  addTags('A', tagsA); addTags('B', tagsB);
+  if (gk.on) {
+    [['id', 'Gasket ID', gk.id / 2, tg / 2], ['od', 'Gasket OD', gk.od / 2, tg / 2], ['t', 'Gasket thickness', (gk.id + gk.od) / 4, tg]].forEach(([k, nm, r, x]) =>
+      tagsB.push({ x: X(x), y: Y(r), name: nm, value: gk[k], ed: { obj: 'gasket', key: k, value: gk[k], name: nm } }));
+  }
+  const stack = (tags, textX, edgeX, anchor) => {
+    tags.sort((a, b) => a.y - b.y);
+    const gap = 19, top = 20, bot = H - 60;
+    let y = top - gap;
+    tags.forEach(t => { t.ly = Math.max(t.y, y + gap); y = t.ly; });
+    for (let i = tags.length - 1, lim = bot; i >= 0; i--) { tags[i].ly = Math.min(tags[i].ly, lim); lim = tags[i].ly - gap; }
+    tags.forEach(t => {
+      el('line', { x1: edgeX, y1: t.ly - 4, x2: t.x, y2: t.y, class: 'leader' }, svg);
+      el('circle', { cx: t.x, cy: t.y, r: 2.5, class: 'leader-dot' }, svg);
+    });
+    tags.forEach(t => dimTag(svg, textX, t.ly, t.name, t.value, anchor, t.ed));
+  };
+  stack(tagsA, m + COLW - 10, m + COLW - 6, 'end');
+  stack(tagsB, W - m - COLW + 10, W - m - COLW + 6, 'start');
+  $('sec-unit').textContent = '(' + FC_LEN[fcState.unit].label + ')';
+
   // side captions
-  label(svg, m, H - 12, 'A: ' + fcComp('A').short, { anchor: 'start', cls: 'cap' });
-  label(svg, W - m, H - 12, 'B: ' + fcComp('B').short, { anchor: 'end', cls: 'cap' });
+  label(svg, m, H - 10, 'A: ' + fcComp('A').short, { anchor: 'start', cls: 'cap' });
+  label(svg, W - m, H - 10, 'B: ' + fcComp('B').short, { anchor: 'end', cls: 'cap' });
 }
 
 /* ── Results ─────────────────────────────────────────────── */
