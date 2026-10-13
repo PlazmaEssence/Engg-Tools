@@ -47,9 +47,8 @@
   .bt-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   @media (max-width: 760px) { .bt-grid { grid-template-columns: minmax(0, 1fr); } }
   input.calc { color: var(--gold); border-style: dashed; }
-  .adv-toggle { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; font-size: 14px; cursor: pointer; }
-  .adv-toggle input { width: auto; }
-  .adv-only[hidden] { display: none !important; }
+  .opt-title { margin: 6px 18px 0; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  #adv-fields { padding-top: 10px; }
 </style>
 </head>
 <body>
@@ -61,7 +60,7 @@
 
   <div class="intro">
     <h1>Bolt Torque</h1>
-    <p>Tightening torque for a bolted joint using the short-form torque equation. Fill in either the total clamping load or the torque per bolt and the other one is calculated for you. Tick the option below to also enter the clamped ID and OD and get the clamping stress.</p>
+    <p>Tightening torque for a bolted joint using the short-form torque equation. Fill in either the total clamping load or the torque per bolt and the other one is calculated for you. Optionally enter the clamped ID and OD to also get the clamping stress.</p>
   </div>
 
   <div class="notice notice-info">
@@ -73,7 +72,7 @@
     <div class="eq-title">Torque equation</div>
     <div id="eq-main"></div>
     <div id="eq-where" class="eq-where"></div>
-    <div id="eq-adv" class="adv-only" hidden>
+    <div id="eq-adv">
       <div class="eq-title" style="margin-top:12px;">Clamping stress</div>
       <div id="eq-stress"></div>
     </div>
@@ -90,7 +89,7 @@
       <div class="field">
         <label>Bolt diameter, D</label>
         <div class="input-with-unit">
-          <input type="number" step="any" id="f-D" value="20">
+          <input type="number" step="any" id="f-D" value="1">
           <select id="u-D"></select>
         </div>
       </div>
@@ -103,7 +102,7 @@
       <div class="field" id="fld-load">
         <label>Total clamping load, F<sub>total</sub> <span class="calc-tag" id="tag-F"></span></label>
         <div class="input-with-unit">
-          <input type="number" step="any" id="f-F" value="100">
+          <input type="number" step="any" id="f-F" value="10000">
           <select id="u-F"></select>
         </div>
       </div>
@@ -117,20 +116,20 @@
       </div>
     </div>
 
-    <label class="adv-toggle"><input type="checkbox" id="f-adv"> Include clamped area (ID / OD) to calculate clamping stress</label>
+    <div class="opt-title">Optional: clamped area (for clamping stress)</div>
 
-    <div class="field-grid bt-grid adv-only" id="adv-fields" hidden>
+    <div class="field-grid bt-grid" id="adv-fields">
       <div class="field">
         <label>Clamped area inner diameter, ID</label>
         <div class="input-with-unit">
-          <input type="number" step="any" id="f-ID" value="22">
+          <input type="number" step="any" id="f-ID" value="1.125">
           <select id="u-ID"></select>
         </div>
       </div>
       <div class="field">
         <label>Clamped area outer diameter, OD</label>
         <div class="input-with-unit">
-          <input type="number" step="any" id="f-OD" value="40">
+          <input type="number" step="any" id="f-OD" value="2">
           <select id="u-OD"></select>
         </div>
       </div>
@@ -152,7 +151,7 @@
       <div class="stat-num" id="out2">–</div>
       <div class="stat-lbl" id="out2-lbl">clamping load per bolt</div>
     </div>
-    <div class="stat stat-a adv-only" id="stat-stress" hidden>
+    <div class="stat stat-a" id="stat-stress">
       <div class="stat-top"><div class="stat-icon">σ</div></div>
       <div class="stat-num" id="out3">–</div>
       <div class="stat-lbl">clamping stress on annulus</div>
@@ -171,6 +170,6 @@
   window.EGG_CURRENT_TOOL = 'bolt-torque';
 </script>
 <script src="../../assets/js/site.js?v=3"></script>
-<script src="bolt-torque.js?v=3"></script>
+<script src="bolt-torque.js?v=4"></script>
 </body>
 </html>

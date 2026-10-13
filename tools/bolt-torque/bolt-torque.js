@@ -49,12 +49,12 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
   const DEl = el('f-D'), uDEl = el('u-D');
   const FEl = el('f-F'), uFEl = el('u-F');
   const TEl = el('f-T'), uTEl = el('u-T');
-  const advEl = el('f-adv'), advFields = el('adv-fields');
+  
   const IDEl = el('f-ID'), uIDEl = el('u-ID');
   const ODEl = el('f-OD'), uODEl = el('u-OD');
   const uSEl = el('u-S');
 
-  const cur = { D: 'mm', F: 'kN', T: 'Nm', ID: 'mm', OD: 'mm' };
+  const cur = { D: 'in', F: 'lbf', T: 'ftlb', ID: 'in', OD: 'in' };
 
   function opts(table, order) {
     return order.map(k => `<option value="${k}">${table[k].label}</option>`).join('');
@@ -76,7 +76,7 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
   uTEl.innerHTML = opts(BT_TORQUE, BT_TORQUE_ORDER);
   uSEl.innerHTML = opts(BT_STRESS, BT_STRESS_ORDER);
   uDEl.value = cur.D; uIDEl.value = cur.ID; uODEl.value = cur.OD;
-  uFEl.value = cur.F; uTEl.value = cur.T; uSEl.value = 'MPa';
+  uFEl.value = cur.F; uTEl.value = cur.T; uSEl.value = 'psi';
 
   // --- LaTeX (KaTeX loads deferred; fall back to plain text if it is blocked) ---
   function renderTex(id, tex) {
@@ -114,11 +114,6 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
   }
 
   function compute() {
-    const adv = advEl.checked;
-    advFields.hidden = !adv;
-    el('stat-stress').hidden = !adv;
-    el('eq-adv').hidden = !adv;
-
     const N = val(NEl), K = val(KEl);
     const D = val(DEl) * BT_LEN[cur.D].f;
     const fU = BT_FORCE[cur.F], tU = BT_TORQUE[cur.T];
@@ -152,11 +147,12 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
     el('out2').textContent = ok ? `${trim(Fb / fU.f)} ${fU.label}` : '–';
 
     let stressLine = '';
-    if (adv) {
+    {
       const ID = val(IDEl) * BT_LEN[cur.ID].f;
       const OD = val(ODEl) * BT_LEN[cur.OD].f;
       const sU = BT_STRESS[uSEl.value];
       const geomOk = isFinite(ID) && isFinite(OD) && ID >= 0 && OD > ID;
+      const idBlank = !isFinite(ID) || !isFinite(OD);
       if (ok && geomOk) {
         const A = Math.PI / 4 * (OD * OD - ID * ID);
         const sigma = Ftot / A;
@@ -165,7 +161,7 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
                      `σ  = F_total / A = ${trim(Ftot)} / ${trim(A)} = ${trim(sigma)} Pa = ${trim(sigma / sU.f)} ${sU.label}`;
       } else {
         el('out3').textContent = '–';
-        stressLine = '\nClamping stress needs ID ≥ 0 and OD > ID.';
+        stressLine = idBlank ? '' : '\nClamping stress needs ID ≥ 0 and OD > ID.';
       }
     }
 
@@ -203,7 +199,6 @@ const BT_STRESS_ORDER = ['MPa', 'kPa', 'psi', 'ksi'];
   [NEl, KEl, DEl, IDEl, ODEl].forEach(n => n.addEventListener('input', compute));
   FEl.addEventListener('input', () => { if (isFinite(val(FEl))) driver = 'F'; compute(); });
   TEl.addEventListener('input', () => { if (isFinite(val(TEl))) driver = 'T'; compute(); });
-  advEl.addEventListener('change', compute);
 
   compute();
 })();
