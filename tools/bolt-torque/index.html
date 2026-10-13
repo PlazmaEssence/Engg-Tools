@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolt Torque · Egg Tools</title>
+<meta name="description" content="Bolt tightening torque from clamping load, bolt diameter, nut factor and bolt count (T = K·D·F), with an optional clamped-area ID/OD for clamping stress.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="stylesheet" href="../../assets/css/theme.css?v=2">
+<style>
+  .input-with-unit { display: flex; gap: 8px; }
+  .input-with-unit input { flex: 1 1 auto; min-width: 0; }
+  .input-with-unit select { flex: 0 0 auto; width: auto; }
+
+  .eq-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+    overflow-x: auto;
+  }
+  .eq-box .eq-title { font-size: 12px; color: var(--muted); letter-spacing: 0.03em; margin-bottom: 4px; }
+  .eq-box .eq-where { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.7; }
+
+  .formula-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 1.5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .adv-toggle { display: flex; align-items: center; gap: 8px; margin: 14px 0 4px; font-size: 14px; cursor: pointer; }
+  .adv-toggle input { width: auto; }
+  .adv-only[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header"></header>
+
+<main>
+  <div class="breadcrumb"><a href="../../index.html">Egg Tools</a> <span>/</span> <span>Bolt Torque</span></div>
+
+  <div class="intro">
+    <h1>Bolt Torque</h1>
+    <p>Tightening torque for a bolted joint using the short-form torque equation. Enter the total clamping load and the nut factor, or solve the other way around. Tick the option below to also enter the clamped ID and OD and get the clamping stress.</p>
+  </div>
+
+  <div class="notice notice-info">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>The nut factor <strong>K</strong> lumps thread and under-head friction together and varies a lot with lubrication and finish (K = 0.16 is a typical value for plain, lightly oiled steel). Scatter of ±25% in preload is normal for torque tightening, so treat results as an estimate. The clamping load is the <strong>total</strong> for the joint, shared equally by the bolts.</div>
+  </div>
+
+  <div class="eq-box">
+    <div class="eq-title">Torque equation</div>
+    <div id="eq-main"></div>
+    <div id="eq-where" class="eq-where"></div>
+    <div id="eq-adv" class="adv-only" hidden>
+      <div class="eq-title" style="margin-top:12px;">Clamping stress</div>
+      <div id="eq-stress"></div>
+    </div>
+  </div>
+
+  <div class="input-panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><label>Inputs</label></div>
+    <div class="field-grid">
+      <div class="field">
+        <label>Solve for</label>
+        <select id="f-mode">
+          <option value="torque">Torque (from clamping load)</option>
+          <option value="load">Clamping load (from torque)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Number of bolts, N</label>
+        <input type="number" step="1" min="1" id="f-N" value="1">
+      </div>
+
+      <div class="field">
+        <label>Bolt diameter, D</label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-D" value="20">
+          <select id="u-D"></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Nut factor, K</label>
+        <input type="number" step="any" id="f-K" value="0.16">
+      </div>
+
+      <div class="field" id="fld-load">
+        <label>Total clamping load, F<sub>total</sub></label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-F" value="100">
+          <select id="u-F"></select>
+        </div>
+      </div>
+
+      <div class="field" id="fld-torque" hidden>
+        <label>Torque per bolt, T</label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-T" value="100">
+          <select id="u-T"></select>
+        </div>
+      </div>
+    </div>
+
+    <label class="adv-toggle"><input type="checkbox" id="f-adv"> Include clamped area (ID / OD) to calculate clamping stress</label>
+
+    <div class="field-grid adv-only" id="adv-fields" hidden>
+      <div class="field">
+        <label>Clamped area inner diameter, ID</label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-ID" value="22">
+          <select id="u-ID"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Clamped area outer diameter, OD</label>
+        <div class="input-with-unit">
+          <input type="number" step="any" id="f-OD" value="40">
+          <select id="u-OD"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Stress unit</label>
+        <select id="u-S"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat stat-gold">
+      <div class="stat-top"><div class="stat-icon" id="out1-icon">T</div></div>
+      <div class="stat-num" id="out1">–</div>
+      <div class="stat-lbl" id="out1-lbl">torque per bolt</div>
+    </div>
+    <div class="stat stat-s">
+      <div class="stat-top"><div class="stat-icon" id="out2-icon">F</div></div>
+      <div class="stat-num" id="out2">–</div>
+      <div class="stat-lbl" id="out2-lbl">load per bolt</div>
+    </div>
+    <div class="stat stat-a adv-only" id="stat-stress" hidden>
+      <div class="stat-top"><div class="stat-icon">σ</div></div>
+      <div class="stat-num" id="out3">–</div>
+      <div class="stat-lbl">clamping stress on annulus</div>
+    </div>
+  </div>
+
+  <div class="formula-box" id="formula-box"></div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="../../assets/js/tools-registry.js?v=7"></script>
+<script>
+  window.EGG_BASE = '../../';
+  window.EGG_CURRENT_TOOL = 'bolt-torque';
+</script>
+<script src="../../assets/js/site.js?v=3"></script>
+<script src="bolt-torque.js?v=1"></script>
+</body>
+</html>

@@ -81,5 +81,14 @@ const EGG_TOOLS = [
     tags: ['Pump Curves', 'Digitizer', 'Head', 'Efficiency'],
     url: 'tools/plot-log/',
     status: 'live'
+  },
+  {
+    id: 'bolt-torque',
+    name: 'Bolt Torque',
+    icon: '🔩',
+    desc: 'Tightening torque from clamping load, bolt diameter, nut factor and bolt count (T = K·D·F), or solve for load from torque. Optionally enter the clamped ID and OD to get clamping stress.',
+    tags: ['Bolting', 'Torque', 'Clamping Load', 'Nut Factor'],
+    url: 'tools/bolt-torque/',
+    status: 'live'
   }
 ];
