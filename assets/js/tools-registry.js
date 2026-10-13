@@ -90,5 +90,14 @@ const EGG_TOOLS = [
     tags: ['Bolting', 'Torque', 'Clamping Load', 'Nut Factor'],
     url: 'tools/bolt-torque/',
     status: 'live'
+  },
+  {
+    id: 'flange-contact',
+    name: 'Flange Contact Area',
+    icon: '◎',
+    desc: 'Draw the mating faces of slip-on, lap joint and HDPE flange adapter joints to scale and see where their IDs and ODs meet, with the resulting contact ring and area.',
+    tags: ['Flanges', 'HDPE', 'Contact Area', 'Sealing Face'],
+    url: 'tools/flange-contact/',
+    status: 'live'
   }
 ];

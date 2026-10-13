@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flange Contact Area · Egg Tools</title>
+<meta name="description" content="Visualise where the ID and OD of two mating flange faces meet - slip-on, lap joint and HDPE flange adapter joints - and the resulting contact area.">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/theme.css?v=2">
+<style>
+  .input-with-unit { display: flex; gap: 8px; align-items: center; }
+  .input-with-unit input { flex: 1 1 auto; min-width: 0; }
+  .unit-tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); min-width: 22px; }
+
+  .ctl-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .side-title { margin: 0; padding: 14px 18px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .side-title + .field-grid { padding-top: 10px; }
+  .param-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .side-sep { border-top: 1px solid var(--border); margin-top: 4px; }
+
+  .viz-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+  .viz-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .viz-card svg { display: block; width: 100%; height: auto; }
+  .viz-body { padding: 8px; }
+
+  /* SVG theming */
+  svg .cl { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 10 3 2 3; }
+  svg .part { stroke: var(--muted); stroke-width: 1.2; stroke-linejoin: round; }
+  svg .part.steel { fill: #2a2e3a; }
+  svg .part.hdpe  { fill: #3b3524; stroke: var(--gold-dim); }
+  svg .part.weld  { fill: var(--muted); stroke: none; }
+  svg .hl { stroke-width: 4; stroke-linecap: butt; }
+  svg .hl-c { stroke: var(--green); stroke-width: 5; }
+  svg .hl-a { stroke: var(--blue); }
+  svg .hl-b { stroke: var(--gold); }
+  svg .dimline { stroke: var(--text); stroke-width: 1; }
+  svg .dimline.od { stroke: var(--text); stroke-dasharray: 5 3; }
+  svg .dim-txt { font: 500 13px 'JetBrains Mono', monospace; fill: var(--text); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  svg .dim-txt.faint { fill: var(--muted); font-size: 11px; }
+  svg .dim-txt.cap { fill: var(--muted); font: 600 12px 'Inter', sans-serif; letter-spacing: 0.04em; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px 14px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+  .legend .swatch { margin-right: 0; }
+
+  .res-card { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .res-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .res-stats .stat { margin: 0; }
+  .stat-by { font-size: 11px; color: var(--faint); margin-top: 3px; }
+  .stat-num .u { font-size: 13px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-left: 4px; }
+
+  table.surf { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.surf th { text-align: right; font-weight: 600; font-size: 11px; letter-spacing: 0.03em; color: var(--muted); padding: 6px 6px; border-bottom: 1px solid var(--border); }
+  table.surf th:first-child, table.surf td:first-child { text-align: left; }
+  table.surf td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+  table.surf td:first-child { font-family: 'Inter', sans-serif; }
+
+  @media (max-width: 900px) { .viz-row { grid-template-columns: minmax(0, 1fr); } .ctl-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+
+<header class="site-header" id="site-header"></header>
+
+<main>
+  <div class="breadcrumb"><a href="../../index.html">Egg Tools</a> <span>/</span> <span>Flange Contact Area</span></div>
+
+  <div class="intro">
+    <h1>Flange Contact Area</h1>
+    <p>Pick a joint and see where the ID and OD of the two mating faces meet. The faces only touch where both exist, so the contact ring runs from the <strong>larger ID</strong> to the <strong>smaller OD</strong>. Everything is drawn to scale (the pipe stubs are cut short).</p>
+  </div>
+
+  <div class="notice notice-info">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>Rough sketch tool. Flange sizes are approximate ASME B16.5 Class 150 values and the HDPE adapter and stub end dimensions are placeholders that vary by manufacturer, so overwrite them with your drawing or vendor data. Gaskets, raised-face height, bolt holes and fillet radii are ignored: this compares bare face to face.</div>
+  </div>
+
+  <div class="input-panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><label>Joint</label></div>
+    <div class="field-grid ctl-grid">
+      <div class="field">
+        <label>Scenario</label>
+        <select id="f-joint"></select>
+      </div>
+      <div class="field">
+        <label>Interface to show</label>
+        <select id="f-iface"></select>
+      </div>
+      <div class="field">
+        <label>Display units</label>
+        <select id="f-unit"></select>
+      </div>
+      <div class="field">
+        <label>Pipe size</label>
+        <select id="f-nps"></select>
+      </div>
+      <div class="field" id="fld-sched">
+        <label>Steel pipe schedule</label>
+        <select id="f-sched"></select>
+      </div>
+      <div class="field" id="fld-dr">
+        <label>HDPE DR</label>
+        <select id="f-dr"></select>
+      </div>
+    </div>
+
+    <div class="side-sep"></div>
+    <div class="side-title" id="side-A-title"></div>
+    <div class="field-grid param-grid" id="params-A"></div>
+    <div class="side-sep"></div>
+    <div class="side-title" id="side-B-title"></div>
+    <div class="field-grid param-grid" id="params-B"></div>
+    <div style="padding:0 18px 16px;"><button class="btn btn-ghost" id="btn-reset" type="button">Reset dimensions to defaults</button></div>
+  </div>
+
+  <div class="notice notice-danger" id="warn-box" style="display:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div></div>
+  </div>
+
+  <div class="viz-card" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><label>Half section through the joint</label></div>
+    <div class="viz-body"><svg id="sec-svg" viewBox="0 0 780 400" role="img" aria-label="Half section of the flange joint"></svg></div>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--green)"></i> Contact</span>
+      <span><i class="swatch" style="background:var(--blue)"></i> First surface only (nothing to touch)</span>
+      <span><i class="swatch" style="background:var(--gold)"></i> Second surface only (nothing to touch)</span>
+    </div>
+  </div>
+
+  <div class="viz-row">
+    <div class="viz-card">
+      <div class="panel-header"><label>Face view (looking along the pipe)</label></div>
+      <div class="viz-body"><svg id="plan-svg" viewBox="0 0 400 400" role="img" aria-label="Plan view of the mating annuli"></svg></div>
+    </div>
+
+    <div class="viz-card">
+      <div class="panel-header"><label>Contact</label></div>
+      <div class="res-card">
+        <div class="res-stats">
+          <div class="stat stat-a">
+            <div class="stat-num"><span id="o-id">–</span><span class="u u-len"></span></div>
+            <div class="stat-lbl">contact ID</div>
+            <div class="stat-by" id="o-id-by"></div>
+          </div>
+          <div class="stat stat-a">
+            <div class="stat-num"><span id="o-od">–</span><span class="u u-len"></span></div>
+            <div class="stat-lbl">contact OD</div>
+            <div class="stat-by" id="o-od-by"></div>
+          </div>
+          <div class="stat stat-gold">
+            <div class="stat-num"><span id="o-area">–</span><span class="u" id="o-area-u"></span></div>
+            <div class="stat-lbl">contact area</div>
+            <div class="stat-by" id="o-area-alt"></div>
+          </div>
+          <div class="stat stat-s">
+            <div class="stat-num"><span id="o-w">–</span><span class="u u-len"></span></div>
+            <div class="stat-lbl">radial contact width</div>
+          </div>
+        </div>
+
+        <table class="surf">
+          <thead><tr><th>Surface</th><th id="surf-id-h">ID</th><th id="surf-od-h">OD</th><th id="surf-area-h">Area</th><th id="surf-free-h">Not touching</th><th>In contact</th></tr></thead>
+          <tbody id="surf-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer" id="site-footer"></footer>
+
+<script src="../../assets/js/tools-registry.js?v=8"></script>
+<script>
+  window.EGG_BASE = '../../';
+  window.EGG_CURRENT_TOOL = 'flange-contact';
+</script>
+<script src="../../assets/js/site.js?v=3"></script>
+<script src="../../assets/js/pipe-data.js?v=3"></script>
+<script src="flange-contact.js?v=2"></script>
+</body>
+</html>
