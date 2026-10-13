@@ -641,6 +641,89 @@ function resetAll() {
   render();
 }
 
+/* ── Save / load inputs (JSON) ───────────────────────────────
+   Dimensions are stored in inches whatever the display unit, so a file
+   loads the same way regardless of the unit it was saved in. */
+const FC_FILE_TAG = 'egg-tools/flange-contact';
+
+function fcMsg(text, ok) {
+  const m = $('io-msg');
+  m.textContent = text;
+  m.style.color = ok ? 'var(--green)' : 'var(--red)';
+}
+
+function fcSave() {
+  const out = {
+    tool: FC_FILE_TAG, version: 1,
+    joint: fcState.joint, nps: fcState.nps, sched: fcState.sched, dr: fcState.dr,
+    unit: fcState.unit, iface: fcState.iface,
+    unitsOfDimensions: 'in',
+    A: fcState.A, B: fcState.B, gasket: fcState.gasket
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2) + '\n'], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `flange-contact_${fcState.joint}_NPS${fcState.nps}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  fcMsg('Saved ' + a.download, true);
+}
+
+const fcPos = v => typeof v === 'number' && isFinite(v) && v > 0;
+
+function fcLoadObject(d) {
+  if (!d || typeof d !== 'object' || d.tool !== FC_FILE_TAG) throw new Error('Not a flange contact inputs file.');
+  if (!FC_JOINTS.some(j => j.id === d.joint)) throw new Error('Unknown scenario "' + d.joint + '".');
+  if (!FC_FLANGE[d.nps]) throw new Error('Unsupported pipe size "' + d.nps + '".');
+  fcState.joint = d.joint;
+  fcState.nps = String(d.nps);
+  fcState.dr = HDPE_DR.includes(d.dr) ? d.dr : fcState.dr;
+  fcState.unit = FC_LEN[d.unit] ? d.unit : fcState.unit;
+  fcState.sched = d.sched;
+  fcState.gasket.on = d.gasket && d.gasket.on === true;
+  fcState.gasket.type = d.gasket && d.gasket.type === 'full' ? 'full' : 'ring';
+  $('f-joint').value = fcState.joint;
+  $('f-nps').value = fcState.nps;
+  $('f-dr').value = fcState.dr;
+  $('f-unit').value = fcState.unit;
+  buildSchedules();                      // also repairs a schedule this size doesn't have
+  fcLoadDefaults();                      // anything missing or invalid keeps its default
+  let skipped = 0;
+  for (const side of ['A', 'B']) {
+    fcComp(side).params.forEach(pr => {
+      const v = d[side] && d[side][pr.k];
+      if (fcPos(v)) fcState[side][pr.k] = v; else skipped++;
+    });
+  }
+  ['id', 'od', 't'].forEach(k => {
+    const v = d.gasket && d.gasket[k];
+    if (fcPos(v)) fcState.gasket[k] = v; else skipped++;
+  });
+  fcState.iface = d.iface;
+  if (!fcInterfaces().some(i => i.id === fcState.iface)) fcState.iface = fcInterfaces()[0].id;
+  buildInterfaces();
+  buildParams();
+  toggleConditional();
+  syncParamInputs();
+  syncGasketInputs();
+  render();
+  return skipped;
+}
+
+function fcLoadFile(file) {
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const skipped = fcLoadObject(JSON.parse(rd.result));
+      fcMsg('Loaded ' + file.name + (skipped ? ` (${skipped} missing or invalid value${skipped > 1 ? 's' : ''} left at defaults)` : ''), true);
+    } catch (err) {
+      fcMsg('Could not load ' + file.name + ': ' + err.message, false);
+    }
+  };
+  rd.onerror = () => fcMsg('Could not read ' + file.name, false);
+  rd.readAsText(file);
+}
+
 function init() {
   fillSelect($('f-joint'), FC_JOINTS.map(j => [j.id, j.label]), fcState.joint);
   fillSelect($('f-nps'), Object.keys(FC_FLANGE).map(n => [n, 'NPS ' + n]), fcState.nps);
@@ -662,7 +745,13 @@ function init() {
     fcState.gasket[k] = fcFromDisp(v);
     render();
   }));
-  $('btn-reset').addEventListener('click', resetAll);
+  $('btn-reset').addEventListener('click', () => { resetAll(); fcMsg('', true); });
+  $('btn-save').addEventListener('click', fcSave);
+  $('btn-load').addEventListener('click', () => $('file-load').click());
+  $('file-load').addEventListener('change', e => {
+    if (e.target.files[0]) fcLoadFile(e.target.files[0]);
+    e.target.value = '';                 // so the same file can be loaded again
+  });
 
   resetAll();
 }
