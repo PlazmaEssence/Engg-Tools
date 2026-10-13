@@ -45,6 +45,13 @@
   svg .dim-txt.faint { fill: var(--muted); font-size: 11px; }
   svg .dim-txt.cap { fill: var(--muted); font: 600 12px 'Inter', sans-serif; letter-spacing: 0.04em; }
 
+  .viz-body { position: relative; }
+  svg .dim-txt.editable { cursor: pointer; }
+  svg .dim-txt.editable:hover { fill: var(--gold); }
+  .label-edit { position: absolute; z-index: 5; background: var(--surface2); border: 1px solid var(--gold-dim); border-radius: var(--radius-sm); padding: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+  .label-edit input { width: 110px; background: var(--bg); border: 1px solid var(--border2); border-radius: 4px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 5px 7px; }
+  .label-edit input:focus { outline: none; border-color: var(--gold); }
+  .label-edit div { font-size: 10.5px; color: var(--muted); margin-top: 4px; max-width: 190px; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 18px 14px; font-size: 12px; color: var(--muted); }
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
@@ -74,7 +81,7 @@
 
   <div class="intro">
     <h1>Flange Contact Area</h1>
-    <p>Pick a joint and see where the ID and OD of the two mating faces meet. The faces only touch where both exist, so the contact ring runs from the <strong>larger ID</strong> to the <strong>smaller OD</strong>. Everything is drawn to scale (the pipe stubs are cut short).</p>
+    <p>Pick a joint and see where the ID and OD of the two mating faces meet. The faces only touch where both exist, so the contact ring runs from the <strong>larger ID</strong> to the <strong>smaller OD</strong>. Everything is drawn to scale (the pipe stubs are cut short). Click an ID or OD label on either drawing to edit it there.</p>
   </div>
 
   <div class="notice notice-info">
@@ -201,6 +208,6 @@
 </script>
 <script src="../../assets/js/site.js?v=3"></script>
 <script src="../../assets/js/pipe-data.js?v=3"></script>
-<script src="flange-contact.js?v=3"></script>
+<script src="flange-contact.js?v=4"></script>
 </body>
 </html>

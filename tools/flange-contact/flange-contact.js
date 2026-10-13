@@ -62,7 +62,7 @@ const FC_COMP = {
       { k: 't',      label: 'Flange thickness' }
     ],
     defaults: (pipe, fl) => ({ pipeOD: pipe.od, pipeID: pipe.id, bore: fl.bore, rf: fl.rf, fo: fl.fo, t: fl.t }),
-    face: p => ({ name: 'Slip-on raised face', id: p.bore, od: p.rf }),
+    face: p => ({ name: 'Slip-on raised face', id: p.bore, od: p.rf, idK: 'bore', odK: 'rf' }),
     bearing: null,
     draw(p, d) {
       const B = p.bore / 2, G = p.rf / 2, F = p.fo / 2, ro = p.pipeOD / 2, ri = p.pipeID / 2;
@@ -91,11 +91,11 @@ const FC_COMP = {
       { k: 't',      label: 'Flange thickness' }
     ],
     defaults: (pipe, fl) => ({ pipeOD: pipe.od, pipeID: pipe.id, lap: fl.rf, tl: Math.max(0.25, pipe.wall), bore: fl.bore, fo: fl.fo, t: fl.t }),
-    face: p => ({ name: 'Stub end face', id: p.pipeID, od: p.lap }),
+    face: p => ({ name: 'Stub end face', id: p.pipeID, od: p.lap, idK: 'pipeID', odK: 'lap' }),
     bearing: p => ({
       x: p.tl,
-      s1: { name: 'Loose flange face', id: p.bore, od: p.fo },
-      s2: { name: 'Stub end lap back', id: p.pipeOD, od: p.lap }
+      s1: { name: 'Loose flange face', id: p.bore, od: p.fo, idK: 'bore', odK: 'fo' },
+      s2: { name: 'Stub end lap back', id: p.pipeOD, od: p.lap, idK: 'pipeOD', odK: 'lap' }
     }),
     draw(p, d) {
       const G = p.lap / 2, ro = p.pipeOD / 2, ri = p.pipeID / 2, B = p.bore / 2, F = p.fo / 2;
@@ -124,11 +124,11 @@ const FC_COMP = {
       pipeOD: pipe.od, pipeID: pipe.id, face: fl.rf, tc: +(0.5 + 0.04 * pipe.od).toFixed(2),
       rbore: +(pipe.od + Math.max(0.12, 0.01 * pipe.od)).toFixed(3), fo: fl.fo, t: fl.t
     }),
-    face: p => ({ name: 'HDPE adapter face', id: p.pipeID, od: p.face }),
+    face: p => ({ name: 'HDPE adapter face', id: p.pipeID, od: p.face, idK: 'pipeID', odK: 'face' }),
     bearing: p => ({
       x: p.tc,
-      s1: { name: 'Backing ring face', id: p.rbore, od: p.fo },
-      s2: { name: 'Adapter collar back', id: p.pipeOD, od: p.face }
+      s1: { name: 'Backing ring face', id: p.rbore, od: p.fo, idK: 'rbore', odK: 'fo' },
+      s2: { name: 'Adapter collar back', id: p.pipeOD, od: p.face, idK: 'pipeOD', odK: 'face' }
     }),
     draw(p, d) {
       const G = p.face / 2, ro = p.pipeOD / 2, ri = p.pipeID / 2, R = p.rbore / 2, F = p.fo / 2;
@@ -225,14 +225,15 @@ function fcActiveInterface() {
   const list = fcInterfaces();
   if (!list.some(i => i.id === fcState.iface)) fcState.iface = list[0].id;
   const id = fcState.iface;
-  const fA = () => { const f = fcComp('A').face(fcState.A); f.name = 'A: ' + f.name; return f; };
-  const fB = () => { const f = fcComp('B').face(fcState.B); f.name = 'B: ' + f.name; return f; };
-  const gk = () => ({ name: 'Gasket', id: fcState.gasket.id, od: fcState.gasket.od });
+  const fA = () => { const f = fcComp('A').face(fcState.A); f.name = 'A: ' + f.name; f.obj = 'A'; return f; };
+  const fB = () => { const f = fcComp('B').face(fcState.B); f.name = 'B: ' + f.name; f.obj = 'B'; return f; };
+  const gk = () => ({ name: 'Gasket', id: fcState.gasket.id, od: fcState.gasket.od, idK: 'id', odK: 'od', obj: 'gasket' });
   if (id === 'seal') return { id, s1: fA(), s2: fB(), x: 0, gs: 0, dir1: -1, side: null };
   if (id === 'gA') return { id, s1: fA(), s2: gk(), x: 0, gs: 0, dir1: -1, side: null };
   if (id === 'gB') return { id, s1: gk(), s2: fB(), x: 0, gs: 1, dir1: -1, side: null };
   const side = id.slice(-1);
   const b = fcComp(side).bearing(fcState[side]);
+  b.s1.obj = b.s2.obj = side;
   const sign = side === 'A' ? -1 : 1;           // which way the side runs from the face
   return { id, s1: b.s1, s2: b.s2, x: sign * b.x, gs: side === 'B' && fcState.gasket.on ? 1 : 0, dir1: sign, side };
 }
@@ -285,8 +286,56 @@ function svgDefs(svg, uid) {
 }
 
 function label(svg, x, y, txt, opts = {}) {
-  const a = { x, y, class: 'dim-txt' + (opts.cls ? ' ' + opts.cls : ''), 'text-anchor': opts.anchor || 'middle' };
-  el('text', a, svg, txt);
+  const a = { x, y, class: 'dim-txt' + (opts.cls ? ' ' + opts.cls : '') + (opts.edit ? ' editable' : ''), 'text-anchor': opts.anchor || 'middle' };
+  const t = el('text', a, svg, txt);
+  if (opts.edit) {
+    el('title', {}, t, 'Click to edit');
+    t.addEventListener('click', () => fcEditLabel(t, opts.edit));
+  }
+  return t;
+}
+
+/* Click a contact ID / OD label to edit it in place. The value belongs to
+   whichever surface sets it, so that is the dimension that gets changed. */
+function fcEditLabel(textEl, ed) {
+  document.querySelectorAll('.label-edit').forEach(e => e.remove());
+  const host = textEl.closest('.viz-body');
+  const hr = host.getBoundingClientRect(), tr = textEl.getBoundingClientRect();
+  const wrap = document.createElement('div');
+  wrap.className = 'label-edit';
+  wrap.style.left = Math.max(4, tr.left - hr.left - 8) + 'px';
+  wrap.style.top = Math.max(4, tr.top - hr.top - 6) + 'px';
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.step = 'any'; inp.min = '0';
+  inp.value = +fcToDisp(ed.value).toFixed(4);
+  const cap = document.createElement('div');
+  cap.textContent = `${ed.which.toUpperCase()} of ${ed.surface.name} (${FC_LEN[fcState.unit].label})`;
+  wrap.append(inp, cap);
+  host.appendChild(wrap);
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = ok => {
+    if (done) return;
+    done = true;
+    const v = parseFloat(inp.value);
+    wrap.remove();
+    if (!ok || !(v > 0)) return;
+    const target = ed.surface.obj === 'gasket' ? fcState.gasket : fcState[ed.surface.obj];
+    target[ed.which === 'id' ? ed.surface.idK : ed.surface.odK] = fcFromDisp(v);
+    syncParamInputs(); syncGasketInputs();
+    render();
+  };
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') finish(true);
+    else if (e.key === 'Escape') finish(false);
+  });
+  inp.addEventListener('blur', () => finish(true));
+}
+
+/* Which surface sets the contact ID / OD, and its current value. */
+function fcEdit(I, C, which) {
+  const surface = (which === 'id' ? C.idBy : C.odBy) === 1 ? I.s1 : I.s2;
+  return { which, surface, value: which === 'id' ? C.id : C.od };
 }
 
 /* ── Plan view (looking along the bolt axis) ─────────────── */
@@ -319,11 +368,11 @@ function drawPlan(I, C) {
     const ri = C.id / 2 * k, ro = C.od / 2 * k;
     // ID dimension: chord along the horizontal, label in the bore
     el('line', { x1: cx - ri, y1: cy + 18, x2: cx + ri, y2: cy + 18, class: 'dimline' }, svg);
-    label(svg, cx, cy + 14, 'ID ' + fcLen(C.id) + ' ' + FC_LEN[fcState.unit].label, { cls: 'dim-id' });
+    label(svg, cx, cy + 14, 'ID ' + fcLen(C.id) + ' ' + FC_LEN[fcState.unit].label, { cls: 'dim-id', edit: fcEdit(I, C, 'id') });
     // OD dimension: diagonal diameter
     const a = -Math.PI / 4, dx = Math.cos(a) * ro, dy = Math.sin(a) * ro;
     el('line', { x1: cx - dx, y1: cy - dy, x2: cx + dx, y2: cy + dy, class: 'dimline od' }, svg);
-    label(svg, cx + dx + 4, cy + dy - 6, 'OD ' + fcLen(C.od) + ' ' + FC_LEN[fcState.unit].label, { anchor: 'start', cls: 'dim-od' });
+    label(svg, cx + dx + 4, cy + dy - 6, 'OD ' + fcLen(C.od) + ' ' + FC_LEN[fcState.unit].label, { anchor: 'start', cls: 'dim-od', edit: fcEdit(I, C, 'od') });
   }
 }
 
@@ -382,8 +431,8 @@ function drawSection(I, C) {
     const u = FC_LEN[fcState.unit].label;
     const ax = !I.side || I.side === 'A' ? X(xi) + 10 : X(xi) - 10;
     const an = !I.side || I.side === 'A' ? 'start' : 'end';
-    label(svg, ax, Y(C.od / 2) - 5, 'OD ' + fcLen(C.od) + ' ' + u, { anchor: an, cls: 'dim-od' });
-    label(svg, ax, Y(C.id / 2) + 14, 'ID ' + fcLen(C.id) + ' ' + u, { anchor: an, cls: 'dim-id' });
+    label(svg, ax, Y(C.od / 2) - 5, 'OD ' + fcLen(C.od) + ' ' + u, { anchor: an, cls: 'dim-od', edit: fcEdit(I, C, 'od') });
+    label(svg, ax, Y(C.id / 2) + 14, 'ID ' + fcLen(C.id) + ' ' + u, { anchor: an, cls: 'dim-id', edit: fcEdit(I, C, 'id') });
   }
 
   // side captions
