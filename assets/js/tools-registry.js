@@ -47,6 +47,15 @@ const EGG_TOOLS = [
     status: 'hidden'
   },
   {
+    id: 'friction-loss',
+    name: 'Friction Loss Calculator',
+    icon: '〰️',
+    desc: 'Pressure loss over a set distance of pipe - Darcy-Weisbach with Haaland, HDPE and carbon-steel size lookup, roughness by material, optional minor losses, and results in your choice of pressure or head unit.',
+    tags: ['Pressure Drop', 'Haaland', 'HDPE', 'Carbon Steel'],
+    url: 'tools/friction-loss/',
+    status: 'live'
+  },
+  {
     id: 'thermal-growth',
     name: 'Pipe Thermal Growth',
     icon: '🌡️',
